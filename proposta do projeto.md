@@ -121,6 +121,34 @@ Nesta etapa, o objetivo é identificar as entidades centrais do domínio e seus 
 - Um Prontuário é associado a um Paciente e pode conter múltiplas entradas de atendimento.
 - Um Convênio pode ser associado a múltiplos Pacientes e definir regras para múltiplos Serviços.
 
+## Justificativa da Abordagem Orientada a Objetos
+
+Esta estrutura reforça a natureza orientada a objetos do projeto, pois organiza o domínio por responsabilidades, comportamentos e regras de negócio.
+
+### Abstração e Especialização
+
+Ao trabalhar com os diferentes papéis do sistema, aplicamos o conceito de especialização. Embora todos compartilhem características comuns, como identificação, autenticação e permissões, o comportamento muda conforme a função exercida. Um Profissional de Saúde possui recursos ligados à execução do atendimento, enquanto um Recepcionista atua diretamente sobre a agenda e os agendamentos de terceiros.
+
+### Encapsulamento de Regras de Negócio
+
+A lógica de transição de estados do agendamento permanece encapsulada na entidade Agendamento. Isso evita alterações inconsistentes de status e garante que regras como confirmação, cancelamento e conclusão do atendimento sejam tratadas de forma centralizada.
+
+### Polimorfismo de Relacionamento
+
+A entidade Serviço pode ser associada a diferentes perfis de profissionais, como médicos, enfermeiros e assistentes, por meio de relacionamentos flexíveis. Dessa forma, o sistema pode crescer sem exigir mudanças estruturais no núcleo do agendamento.
+
+### Entidades e Objetos de Valor
+
+Fica claro que Paciente e Profissional são entidades, pois possuem identidade própria e ciclo de vida independente. Já o status do agendamento funciona como um objeto de valor ou enumeração de domínio, representando o estado atual do processo em um determinado momento.
+
+### Baixo Acoplamento com a Arquitetura
+
+Ao manter a lógica de negócio separada da persistência e da interface, o projeto adota uma base alinhada à Clean Architecture. Isso facilita manutenção, evolução e testes, além de proteger as regras do domínio contra dependências tecnológicas.
+
+### Reflexão para o Projeto
+
+Essa estrutura resolve de forma consistente os problemas de conflito de horários e falta de controle mencionados na visão do problema, pois permite validar regras de negócio antes da persistência e organizar o sistema com objetos bem definidos.
+
 ## Modelagem Comportamental (Diagramas de Sequência)
 
 Nesta etapa, o foco é descrever a interação entre os objetos do sistema para realizar um caso de uso específico, detalhando a sequência de mensagens trocadas.
