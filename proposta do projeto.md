@@ -220,10 +220,10 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String   // Hash da senha (BCrypt)
-  isActive  Boolean  @default(true)
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String   // Hash da senha (BCrypt)
+  isActive      Boolean  @default(true)
   
   // Relacionamento OBRIGATÓRIO com Professional (1:1)
   // Isso permite que Admin, Recepcionista ou Médico tenham um login
