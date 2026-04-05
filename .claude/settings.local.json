@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip -l \"schema DDD.zip\")",
+      "Bash(python3 -c ':*)",
+      "Bash(unzip -o \"schema DDD.zip\" \"prisma 1.png\" \"Entidades de Domínio.png\" \"Group 2.png\" \"Group 1.png\" \"Group 3.png\" -d extracted_parts)",
+      "Bash(python3)"
+    ]
+  }
+}

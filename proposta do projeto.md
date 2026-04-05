@@ -98,6 +98,10 @@ Nesta etapa, o foco está em descrever o que o sistema faz do ponto de vista dos
 | UC06 | Cancelar/Remarcar                       | Paciente / Recepcionista | Alterar o status de um agendamento existente.           |
 | UC07 | Emitir Relatórios                       | Administrador            | Gerar dados de faturamento e produtividade.             |
 
+Figura - Diagrama de Casos de Uso (UML):
+
+![Diagrama de Casos de Uso (UML)](assets/img/Diagrama%20de%20Casos%20de%20Uso%20(UML).png)
+
 ## Modelagem Estrutural (Classes Conceituais)
 
 Nesta etapa, o objetivo é identificar as entidades centrais do domínio e seus relacionamentos, sem entrar em detalhes técnicos de implementação.
@@ -123,6 +127,10 @@ Nesta etapa, o objetivo é identificar as entidades centrais do domínio e seus 
 - Um Agendamento possui um Status, como Pendente, Confirmado, Realizado ou Cancelado.
 - Um Prontuário é associado a um Paciente e pode conter múltiplas entradas de atendimento.
 - Um Convênio pode ser associado a múltiplos Pacientes e definir regras para múltiplos Serviços.
+
+Figura - Diagrama de Classes Conceituais:
+
+![Diagrama de Classes Conceituais](assets/img/Diagrama%20de%20Classes%20Conceituais.png)
 
 ## Justificativa da Abordagem Orientada a Objetos
 
@@ -164,6 +172,10 @@ Nesta etapa, o foco é descrever a interação entre os objetos do sistema para 
 4. O sistema valida a disponibilidade e confirma o agendamento.
 5. O sistema envia uma notificação de confirmação para o paciente.
 
+Figura - Diagrama de Sequência (UC02 - Agendar Atendimento):
+
+![Diagrama de Sequência (Agendamento)](assets/img/Diagrama%20de%20Sequ%C3%AAncia%20(Agendamento).png)
+
 ### Exemplo: Caso de Uso "Confirmar Presença" (UC03)
 
 1. O Paciente envia a confirmação de presença para um agendamento específico.
@@ -202,6 +214,10 @@ Nesta etapa, o objetivo é descrever os diferentes estados que uma entidade cent
 ## Diagrama de Classes Conceituais (Domínio)
 
 Diferente do diagrama de classes de projeto, o diagrama conceitual foca em representar as entidades do domínio e seus relacionamentos de forma abstrata, sem detalhes de implementação. Seguindo o padrão de projeto SOLID, as classes são organizadas para refletir a lógica de negócio e as regras do domínio, facilitando a evolução do sistema ao longo do desenvolvimento.
+
+Figura - Esquema de dados consolidado do domínio:
+
+![Schema final](assets/img/schema%20final.png)
 
 ### Estrutura das Entidades (Domain Layer)
 
