@@ -216,10 +216,33 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hash da senha (BCrypt)
+  isActive  Boolean  @default(true)
+  
+  // Relacionamento OBRIGATÓRIO com Professional (1:1)
+  // Isso permite que Admin, Recepcionista ou Médico tenham um login
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String       @unique
+
+  // Relacionamento opcional com o perfil de paciente
+  // Isso permite que o paciente também tenha acesso ao portal/app
+  patient        Patient?      @relation(fields: [patientId], references: [id])
+  patientId      String?       @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Patient {
   id           String        @id @default(uuid())
   name         String
   contact      String
+  // Relação inversa opcional
+  user         User?         @relation(fields: [userId], references: [id])
+  userId       String?       @unique
   appointments Appointment[] // 1:N Relationship
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -233,6 +256,10 @@ model Professional {
   // Define o papel do profissional no sistema
   role           ProfessionalRole  @default(PRACTITIONER)
   specialty      String?
+  
+  // Relação inversa obrigatória
+  user           User?             @relation(fields: [userId], references: [id])
+  userId         String?           @unique
   services       Service[]         // Relationship N:N (Many professionals can do the same service)
   appointments   Appointment[]
   createdAt      DateTime          @default(now())
