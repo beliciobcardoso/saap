@@ -90,7 +90,7 @@ Nesta etapa, o foco está em descrever o que o sistema faz do ponto de vista dos
 
 | ID   | Caso de Uso                             | Ator Principal           | Descrição Resumida                                      |
 | ---- | --------------------------------------- | ------------------------ | ------------------------------------------------------- |
-| UC01 | Manter Cadastro (Paciente/Profissional) | Administrador            | Incluir, alterar, excluir e consultar dados cadastrais. |
+| UC01 | Manter Cadastro (Usuário/Paciente/Profissional) | Administrador | Incluir, alterar, excluir e consultar dados cadastrais e de acesso. |
 | UC02 | Agendar Atendimento                     | Paciente / Recepcionista | Selecionar profissional, serviço e horário disponível.  |
 | UC03 | Confirmar Presença                      | Paciente                 | O paciente valida que comparecerá ao horário agendado.  |
 | UC04 | Registrar Atendimento                   | Profissional             | Evolução do prontuário e histórico durante a consulta.  |
@@ -104,6 +104,7 @@ Nesta etapa, o objetivo é identificar as entidades centrais do domínio e seus 
 
 ### Entidades Core (Domínio)
 
+- **Usuário (User):** Representa a credencial de acesso ao sistema, concentrando autenticação, status de ativação e vínculo com perfis de negócio.
 - **Paciente:** Armazena dados pessoais e histórico clínico.
 - **Profissional:** Contém especialidade, registro profissional e vinculação a serviços.
 - **Serviço:** Define o que é oferecido, como consulta ou exame, incluindo duração e valor.
@@ -114,6 +115,8 @@ Nesta etapa, o objetivo é identificar as entidades centrais do domínio e seus 
 
 ### Relacionamentos Iniciais (Visão OO)
 
+- Um Usuário pode estar vinculado a um perfil de Paciente, de Profissional, ou a ambos, conforme as regras de acesso da clínica.
+- O vínculo entre Usuário e perfis de domínio permite aplicar RBAC com separação clara entre autenticação e regras de negócio.
 - Um Agendamento possui exatamente um Paciente, um Profissional e um Serviço.
 - Um Paciente pode ter N Agendamentos.
 - Um Profissional possui uma Grade de horários composta por múltiplos intervalos.
@@ -139,7 +142,7 @@ A entidade Serviço pode ser associada a diferentes perfis de profissionais, com
 
 ### Entidades e Objetos de Valor
 
-Fica claro que Paciente e Profissional são entidades, pois possuem identidade própria e ciclo de vida independente. Já o status do agendamento funciona como um objeto de valor ou enumeração de domínio, representando o estado atual do processo em um determinado momento.
+Fica claro que Usuário, Paciente e Profissional são entidades, pois possuem identidade própria e ciclo de vida independente. Já o status do agendamento funciona como um objeto de valor ou enumeração de domínio, representando o estado atual do processo em um determinado momento.
 
 ### Baixo Acoplamento com a Arquitetura
 
