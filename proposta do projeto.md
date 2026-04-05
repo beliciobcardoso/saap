@@ -244,8 +244,7 @@ model Patient {
   name         String
   contact      String
   // Relação inversa opcional
-  user         User?         @relation(fields: [userId], references: [id])
-  userId       String?       @unique
+  user         User?
   appointments Appointment[] // 1:N Relationship
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -261,8 +260,7 @@ model Professional {
   specialty      String?
   
   // Relação inversa obrigatória
-  user           User?             @relation(fields: [userId], references: [id])
-  userId         String?           @unique
+  user           User
   services       Service[]         // Relationship N:N (Many professionals can do the same service)
   appointments   Appointment[]
   createdAt      DateTime          @default(now())
