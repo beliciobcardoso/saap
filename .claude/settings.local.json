@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip -l \"schema DDD.zip\")",
+      "Bash(python3 -c ':*)",
+      "Bash(unzip -o \"schema DDD.zip\" \"prisma 1.png\" \"Entidades de Domínio.png\" \"Group 2.png\" \"Group 1.png\" \"Group 3.png\" -d extracted_parts)",
+      "Bash(python3)",
+      "Bash(/home/bello/Projetos/openclaude/dist/vendor/ripgrep/x64-linux/rg --version)",
+      "mcp__claude_ai_Miro__diagram_get_dsl",
+      "mcp__claude_ai_Miro__context_explore",
+      "mcp__claude_ai_Miro__diagram_create",
+      "mcp__claude_ai_Figma__use_figma",
+      "mcp__claude_ai_Figma__get_design_context",
+      "mcp__claude_ai_Figma__get_screenshot",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/user-round.svg\" -o ring1-entidades/professional.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/heart-pulse.svg\" -o ring1-entidades/patient.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/calendar-clock.svg\" -o ring1-entidades/appointment.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/user.svg\" -o ring1-entidades/user.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/calendar-plus.svg\" -o ring2-casos-uso/uc02-agendar-atendimento.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/circle-check-big.svg\" -o ring2-casos-uso/uc03-confirmar-presenca.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/clipboard-list.svg\" -o ring2-casos-uso/uc04-registrar-atendimento.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/settings.svg\" -o ring3-adaptadores/controllers.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/database.svg\" -o ring3-adaptadores/repositories.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/presentation.svg\" -o ring3-adaptadores/presenters.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/file-json.svg\" -o ring3-adaptadores/dtos.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/shield-check.svg\" -o ring3-adaptadores/auth-guards.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/code.svg\" -o ring4-infraestrutura/web-framework.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/database-zap.svg\" -o ring4-infraestrutura/database-orm.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/monitor-smartphone.svg\" -o ring4-infraestrutura/ui-react-web-mobile.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/cloud-cog.svg\" -o ring4-infraestrutura/service-apis-externas.svg)",
+      "Bash(curl -sL \"https://unpkg.com/lucide-static/icons/shield-alert.svg\" -o ring4-infraestrutura/seguranca-jwt-bcrypt.svg)",
+      "Bash(curl -sL \"https://cdn.simpleicons.org/postgresql/ffffff\" -o logos/postgresql.svg)",
+      "Bash(curl -sL \"https://cdn.simpleicons.org/prisma/ffffff\" -o logos/prisma.svg)",
+      "Bash(curl -sL \"https://cdn.simpleicons.org/nextdotjs/ffffff\" -o logos/nextjs.svg)",
+      "Bash(curl -sL \"https://cdn.simpleicons.org/nestjs/ffffff\" -o logos/nestjs.svg)",
+      "Bash(find /home/bello/Projetos/saap/docs/assets/icons -name \"*.svg\" -exec sh -c 'echo \"$\\(wc -c < \"$1\"\\) bytes  $1\"' _ {} \\\\;)",
+      "Bash(sort -t/ -k8,8)"
+    ]
+  }
+}

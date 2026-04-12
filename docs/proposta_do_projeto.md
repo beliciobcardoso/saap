@@ -1,0 +1,622 @@
+# Projeto SAAP (Sistema de Agendamento de Atendimentos Profissionais)
+
+## Introdução
+
+- **Contextos:**
+  - Clínicas
+  - Consultórios
+  - Serviços especializados
+
+## Visão do Problema
+
+- **Situação:**
+  - Muitos atendimentos ainda são gerenciados de forma manual ou pouco estruturada.
+- **Problemas comuns:**
+  - Conflito de horários
+  - Falta de controle de agenda
+  - Dificuldade de gestão de atendimentos
+
+## Objetivo
+
+O Projeto SAAP tem como objetivo estruturar um sistema de agendamento de atendimentos profissionais que reduza conflitos de horários, melhore o controle da agenda e apoie a gestão dos atendimentos de forma organizada e rastreável.
+
+## Escopo
+
+O escopo inicial contempla o cadastro de entidades principais, o agendamento e o gerenciamento do ciclo de vida dos atendimentos. O desenvolvimento será evolutivo ao longo da disciplina, com refinamento dos artefatos de análise, projeto e arquitetura.
+
+## Funcionalidades Iniciais
+
+**O sistema deverá permitir:**
+
+- Cadastro de pacientes
+- Cadastro de profissionais
+- Cadastro de serviços (consulta, exame, etc.)
+- Agendamento de atendimentos
+- Cancelamento e remarcação
+- Controle de horários disponíveis
+- Check-in presencial e ordenação de atendimento por chegada no período
+
+## Visão do Projeto
+
+**O que vamos construir ao longo da disciplina:**
+
+- Casos de uso
+- Diagrama de classes (conceitual -> projeto)
+- Diagramas de sequência
+- Diagrama de estados
+- Arquitetura do sistema
+
+## Dinâmica
+
+- **7 funcionalidades adicionais (proposta inicial):**
+  - Notificações e Lembretes Automáticos: Envio de confirmações via E-mail ou WhatsApp para reduzir faltas.
+  - Prontuário Eletrônico / Histórico de Atendimento: Registro das notas e observações feitas pelo profissional durante cada sessão.
+  - Gestão de Convênios e Planos: Configuração de diferentes formas de pagamento e cobertura para os atendimentos.
+  - Confirmação de presença pelo paciente: Reduz drasticamente o no-show (faltas) e otimiza o tempo do profissional.
+  - Lista de Espera Inteligente: Sistema que notifica pacientes interessados quando surge uma desistência em um horário concorrido.
+  - Histórico de atendimentos por paciente: Fundamental para a continuidade do cuidado e organização clínica.
+  - Relatórios de Desempenho: Visão analítica para o administrador (ex: taxa de cancelamento, faturamento por período e serviços mais procurados).
+- **2 ou mais atores do sistema (proposta inicial):**
+  - **Paciente:** pessoa que solicita atendimentos, acompanha seus agendamentos e confirma presença quando necessário.
+  - **Profissional de Saúde:** ator responsável por executar os atendimentos e registrar as evoluções clínicas ou operacionais relacionadas ao serviço prestado.
+  - **Assistente:** ator de apoio que auxilia na preparação do atendimento, organização de materiais e suporte ao fluxo operacional da clínica.
+  - **Recepcionista:** ator que centraliza o relacionamento com a agenda, realizando agendamentos, remarcações, cancelamentos e suporte aos pacientes.
+  - **Administrador:** ator com maior nível de permissão, responsável por cadastros, gestão de usuários, relatórios e configuração geral do sistema.
+
+  Esses atores podem ser modelados com generalização e especialização quando fizer sentido no diagrama, especialmente para representar comportamentos comuns, como autenticação, identificação e permissões de acesso, sem perder as diferenças de responsabilidade de cada papel.
+
+  Isso enriquecerá a Análise Orientada a Objetos, pois demonstra uma compreensão clara de permissões e responsabilidades (RBAC (Role-Based Access Control)).
+
+## Critérios de Sucesso e Entregáveis
+
+- Casos de uso documentados para os atores definidos
+- Diagrama de classes conceitual evoluído para projeto
+- Diagramas de sequência dos fluxos principais
+- Diagrama de estados de uma entidade central do domínio
+- Visão arquitetural do sistema com justificativas
+- Protótipo funcional cobrindo as funcionalidades iniciais
+
+## Próxima Aula
+
+- **Transformar nossas ideias em:**
+  - Casos de uso
+  - Classes conceituais
+  - Primeiros diagramas UML
+
+## Modelagem Funcional (Casos de Uso)
+
+Nesta etapa, o foco está em descrever o que o sistema faz do ponto de vista dos atores, consolidando os principais casos de uso do SAAP.
+
+### Identificação dos Casos de Uso
+
+| ID   | Caso de Uso                             | Ator Principal           | Descrição Resumida                                      |
+| ---- | --------------------------------------- | ------------------------ | ------------------------------------------------------- |
+| UC01 | Manter Cadastro (Usuário/Paciente/Profissional) | Administrador | Incluir, alterar, excluir e consultar dados cadastrais e de acesso. |
+| UC02 | Agendar Atendimento                     | Paciente / Recepcionista | Selecionar profissional, serviço e período/slot disponível. |
+| UC03 | Confirmar Presença                      | Paciente                 | Confirmar presença e realizar check-in presencial para entrada na fila de chegada. |
+| UC04 | Registrar Atendimento                   | Profissional             | Evolução do prontuário e histórico durante a consulta.  |
+| UC05 | Gerenciar Fila de Espera                | Recepcionista            | Alocar pacientes em desistências de horários.           |
+| UC06 | Cancelar/Remarcar                       | Paciente / Recepcionista | Alterar o status de um agendamento existente.           |
+| UC07 | Emitir Relatórios                       | Administrador            | Gerar dados de faturamento e produtividade.             |
+| UC08 | Preparar Atendimento                    | Assistente               | Organizar materiais e preparar o ambiente para o atendimento. |
+
+### Regra Operacional de Atendimento por Período
+
+- O agendamento é utilizado para planejar capacidade por período (ex.: manhã 08:00-11:00, intervalo de 1 hora entre atendimentos, capacidade de 4 pacientes).
+- Mesmo com agendamento confirmado, o paciente deve realizar check-in presencial antes do último horário do período correspondente.
+- Após o check-in presencial, o paciente entra em uma fila confirmada de chegada (FIFO) para atendimento.
+- A ordem efetiva de atendimento no período é definida pela ordem de chegada confirmada no local.
+- Pacientes sem check-in dentro do período seguem regra de ausência/no-show conforme política da clínica.
+- Ao encerrar o período de atendimento, todo agendamento confirmado sem check-in presencial deve ser marcado automaticamente como NO_SHOW.
+
+Figura - Diagrama de Casos de Uso (UML):
+
+![Diagrama de Casos de Uso (UML)](assets/img/Diagrama_Casos_Uso.jpg)
+
+> Diagrama criado com [Miro](https://miro.com/app/board/uXjVGjm7Gus=/?moveToWidget=3458764667389215410&cot=14)
+
+## Modelagem Estrutural (Classes Conceituais)
+
+Nesta etapa, o objetivo é identificar as entidades centrais do domínio e seus relacionamentos, sem entrar em detalhes técnicos de implementação.
+
+### Entidades Core (Domínio)
+
+- **Usuário (User):** Representa a credencial de acesso ao sistema, concentrando autenticação, status de ativação e vínculo com perfis de negócio. Profissionais possuem login obrigatório; pacientes podem ter login opcional (não obrigatório).
+- **Paciente (Patient):** Armazena dados pessoais, contato, preferência de notificação e histórico clínico.
+- **Profissional (Professional):** Contém especialidade, registro profissional, papel (role) e vinculação a serviços. Possui flag de ativação (isActive) para desativação sem exclusão.
+- **Serviço (Service):** Define o que é oferecido, como consulta ou exame, incluindo duração e valor. Possui flag de ativação (isActive) para desativação sem exclusão.
+- **Agendamento (Appointment):** Classe central que relaciona Paciente, Profissional e Serviço em uma data e hora específica, incluindo forma de pagamento e vínculo opcional com convênio.
+- **Agenda/Grade (Schedule):** Define os intervalos de tempo semanais em que um profissional está disponível, por dia da semana.
+- **Prontuário (MedicalRecord / MedicalRecordEntry):** Registro cronológico de interações e observações clínicas de um paciente, com entradas vinculadas a cada atendimento.
+- **Convênio (HealthPlan / HealthPlanPricing):** Regras de aceitação e tabelas de preços diferenciados por serviço para diferentes planos.
+- **Notificação (Notification):** Registro de comunicações enviadas ao paciente (confirmações, lembretes, cancelamentos), com controle de canal, tipo e status de entrega.
+- **Fila de Espera (WaitlistEntry):** Entrada que vincula um paciente a um serviço e profissional desejados, com ordenação FIFO para alocação automática em desistências.
+
+### Relacionamentos Iniciais (Visão OO)
+
+- Um Usuário é obrigatoriamente vinculado a um Profissional (1:1) e opcionalmente a um Paciente, permitindo que um profissional também seja paciente na mesma clínica.
+- Pacientes podem operar sem login (padrão), com cadastro gerenciado pela recepção. A confirmação de presença (UC03) pode ocorrer por login opcional no sistema, por link de notificação (e-mail/WhatsApp) ou por contato com a recepção (WhatsApp/telefone), contemplando cenários de menores de idade, idosos ou dependentes.
+- O vínculo entre Usuário e perfis de domínio permite aplicar RBAC com separação clara entre autenticação e regras de negócio.
+- Um Agendamento possui exatamente um Paciente, um Profissional e um Serviço.
+- Um Paciente pode ter N Agendamentos.
+- Um Profissional possui uma Grade de horários (Schedule) composta por múltiplos intervalos semanais.
+- Um Agendamento possui um Status: Pendente, Confirmado, Realizado, Cancelado ou No-show.
+- Um Agendamento registra a forma de pagamento (particular ou convênio) e, quando aplicável, o convênio utilizado.
+- Um Prontuário (MedicalRecord) é associado a um Paciente (1:1) e pode conter múltiplas entradas de atendimento (MedicalRecordEntry), cada uma vinculada a um Agendamento.
+- Um Convênio (HealthPlan) pode ser associado a múltiplos Pacientes e definir tabelas de preços diferenciados (HealthPlanPricing) por Serviço.
+- Uma Notificação é vinculada a um Paciente e opcionalmente a um Agendamento, registrando tipo, canal, status de entrega e conteúdo.
+- Uma entrada na Fila de Espera (WaitlistEntry) vincula um Paciente a um Serviço e Profissional desejados, com ordenação FIFO.
+
+Figura - Diagrama de Classes Conceituais:
+
+![Diagrama de Classes Conceituais](assets/img/Diagrama_Classes_Conceituais_SAAP.png)
+
+> Diagrama criado com [dbdiagram.io](https://dbdiagram.io/d/Diagrama-SAAP-68f004372e68d21b41ab55a0) a partir de [saap_dbdiagram.dbml](assets/saap_dbdiagram.dbml)
+
+## Justificativa da Abordagem Orientada a Objetos
+
+Esta estrutura reforça a natureza orientada a objetos do projeto, pois organiza o domínio por responsabilidades, comportamentos e regras de negócio.
+
+### Abstração e Especialização
+
+Ao trabalhar com os diferentes papéis do sistema, aplicamos o conceito de especialização. Embora todos compartilhem características comuns, como identificação, autenticação e permissões, o comportamento muda conforme a função exercida. Um Profissional de Saúde possui recursos ligados à execução do atendimento, enquanto um Recepcionista atua diretamente sobre a agenda e os agendamentos de terceiros.
+
+### Encapsulamento de Regras de Negócio
+
+A lógica de transição de estados do agendamento permanece encapsulada na entidade Agendamento. Isso evita alterações inconsistentes de status e garante que regras como confirmação, cancelamento e conclusão do atendimento sejam tratadas de forma centralizada.
+
+### Polimorfismo de Relacionamento
+
+A entidade Serviço pode ser associada a diferentes perfis de profissionais, como médicos, enfermeiros e assistentes, por meio de relacionamentos flexíveis. Dessa forma, o sistema pode crescer sem exigir mudanças estruturais no núcleo do agendamento.
+
+### Entidades e Objetos de Valor
+
+Fica claro que Usuário, Paciente e Profissional são entidades, pois possuem identidade própria e ciclo de vida independente. Já o status do agendamento funciona como um objeto de valor ou enumeração de domínio, representando o estado atual do processo em um determinado momento.
+
+### Baixo Acoplamento com a Arquitetura
+
+Ao manter a lógica de negócio separada da persistência e da interface, o projeto adota uma base alinhada à Clean Architecture. Isso facilita manutenção, evolução e testes, além de proteger as regras do domínio contra dependências tecnológicas.
+
+### Reflexão para o Projeto
+
+Essa estrutura resolve de forma consistente os problemas de conflito de horários e falta de controle mencionados na visão do problema, pois permite validar regras de negócio antes da persistência e organizar o sistema com objetos bem definidos.
+
+## Modelagem Comportamental (Diagramas de Sequência)
+
+Nesta etapa, o foco é descrever a interação entre os objetos do sistema para realizar um caso de uso específico, detalhando a sequência de mensagens trocadas.
+
+### Exemplo: Caso de Uso "Agendar Atendimento" (UC02)
+
+1. O Paciente ou Recepcionista inicia o processo de agendamento.
+2. O sistema exibe a lista de profissionais disponíveis para o serviço desejado.
+3. O usuário seleciona um profissional e um período/slot disponível.
+4. O sistema valida a disponibilidade da capacidade do período e confirma o agendamento.
+5. O sistema envia uma notificação de confirmação com orientação de check-in presencial no período.
+
+Figura - Diagrama de Sequência (UC02 - Agendar Atendimento):
+
+![Diagrama de Sequência (Agendamento)](assets/img/Diagrama_Sequência.png)
+
+> Diagrama criado com [PlantText](https://www.planttext.com?text=pLdTZjl65RxdKmpM5vNKzSQxpZgE46_3bQXT0Lf9a6GdQBSmHkH8ceJYi4DAZciRo5MlYo8FqA0NHGluokWJw4ty9FtEy6-ugnW5Sg5k0aJap3bpVhxpdJFCrqdATRfPXspgkkENNScNcg_vowduqqP4lkGldtSUdJdERzYpN_47SLBFFlxu4vlA91LhpWB1tAM80huMKQhCOuf7QHuJDjPg8PD4geZB1FA5PRIHZDlzcwmp6id2TgvCsrf-hTLEyhsCOevZsPpxto-rsaH1HuLAirShcGfhVSMZu9MMAGvd2nuczbgoue5w9QFblPL0BFWcJ7igIeU80pkQYgKIx7d_QF-cgVopOATdjc59bYZ1tZYCkLghLvc13yuw-CSjNf9qld3UE_VEQmkPsbEy6iY56CX8N2eT29qBN7v-UUP-QQ_U2SQ3tgdNyvvYnnXWahwCUPJML9HdMXjiX-ulfAz3mUOg3B1sXRFY_VhCKjq7y-fQSEo-fwahjx9uNmhOByrccV9G-iuxWlt7dtuyrByuVUnEPlrEV-mEPzwKDIW18HAGD0zicSFz57au6dDVej84--mscWXVn3uA5WNEZnXFc3iRJTW3xnJ9yXmdhZBCZhxwoaUujGf3eIykRYEB2Zgf3eruPpOPGFn9xxHtUKyy4NehVK6oK_DJPVyHHdJweWDKkfxNTUz9uWoPlZQ2_ae4cr3SHeqh3RnSAysrL4sZuchYTZqS3nsz-zPNIjmuLZ9AoNJeiVp8rBXNth1hREbuNtpAYw5AvKBwtESrJuQZMRy7-LxliVVey83i3Pv_EsBZINz8g1mS6eP80kgL6e3f17jwm6tK2pS_A1Ph6L7SG_PRniDKw8YdSglm5EM1t_rpzm-5a2Uxzv6lqNSSvzaprkC9QAADdXEAR0SQK5mrfv09jb9wzpE0mwXd6D0_lCZGsoRHH85Dm2dQ0aSZoxpg1qsg9RdbA28IhPv8WUCODL17Y6upzBcGoalNskDUPH1m799wM1dpE1UlIV-1_T49H5qkEnM2nfis-xpDn0zoBkldTcKIezot0YQmvZtNp-4weaQKm7LUMmqANJyuPW5FERrhLb66Soz0l04lunna1ymblSKpnRS8I5QVRVQapRP2cmpgRdt_diDADutu_q4zJToh6syu6p5tC6kpwm99cUUxzriHicromZegMeJIZ3G7BJYK3ZZHxL7iznhxZALw8npgmoP15lg-Q1S9hM-ycz6dLaOBlnjntcdkO6VFCL-scPzBuP1iv6BCGdYUUiOAuA4iUafdisNCb_b4Ic0hZAiguVIHLT16Qbn8c1fWx2u1W05ajA2TkjeQyzVquqQaAmMFLWA1NOr37lM3tnajO2N1j5okKgOM6JCm_BLQOrkorMhdCyBpWJjXQiCwe-4BRzWVdPZjKr6-E2wiOAfsNBcnqbEt1q6CDc58-q1VnZ0xUA26ZfP5pO90hQ7U3k55tWeH4HIw3n5TIsfHgoMN7Tz6P5cHREpuvPWrSKn5etIEoOGvq3xvCL4IfZoURfB662zHUbxJsclb3OxPlhoHP9oHHCnpqNTrP9KdtuNqARXm7YgCwfzYGik73AFxONiFaayon4iarwJ1xZEM2yRFm_87dLzHtcWCoXl-OlizjB4mGCLfCO7MRgi4Ns3TLxY0RNoH9CenPPJd_I8Vsv0Ra9w8jWHsTpmUzOSpSlqbYhBNdzoui_vecEEyg8LZLaiPBPKGC5gpa-hya2qmbb64MmPHjLfcC8eejXa09H70WcQYaroWmscCmJLJHX9EnKhd2uL99yM8bAALZxLO24rNpdnNmxjn-uDZzisrEvl2IMAXwSsqcQctAOFbONbenUTfpWKb3kYCs-XD-ZeMkDH_8cPsBVQ7L-_g9rJLWNvG6_4QOirboDxY3i_JXCSnVYRh90krLMzbiE62umYq4OpX7U_IkwmwdupitWV7oyuJY5JuAK2olnNoExtGj2aOOdKkqnx_DmPu2dK2j_coMnxjj_2eQYqABTQ87-VthCmr4uGHutIxs_sBQH58dKrmX0okkTbGZNNm6RUuQW86fQCOs7cptYvC22rFp6nh4oVrjuCFOyYuEsNUj-D1lmEOlN2dXnwtgbIPY55gKDxrkp9AN6aKTf9gpbA5F2biD1L-pDQuQ68tY9M5kmzBr00DEP5OxZuWWIP7Fe-JJSW3pYBSD-bYIxDpOkPljGQHICCKRYWZ-f35Td-73PrGy8YvsgVlO7wwqQBLEd6gX5iOCpqHyW0qZn9P3lSmcDILRPXz_ClV2DjvcNT7z89DF7VG_pqzlMKTTzZn1lYDRM-HhPVJwz4tJS9fgsNvWO14l7J4COnONT9RhMDJPHY5O65sBzozZqqmO9LNw2a_Iqx4KdCJZc4UjlsE5YtRnNd5bmMOKl-qa1KL5MIo-naLYVtWMxOrznvzxy8Z2XuXIYwu8JbcOelnazAQgBaMiQh2Ydr5CIQ6-Z5cp4FwuEh38Kr4hyp7sFrE58s4S7R_YmJSMHhkDqs4-beUDOjW_vD19nirhNP-Z9takSWjvx2CEad-8HSYVjQ7I6NHUH00BPQIe6syDPHlm0DVn9BOg97plq7B540oFxhUeF_2ctZT0aHT8AQ7FkLrcxRdXwQSWKVbuHwQPq91dCBcAaqnqX1I127kxJCsax6f0fH3Wi5aJU-w8a7FpX3trjGY1Rc1oHeeMs72Q9h100MxuciYbX84vVQ_vjkHM5zyXprDl9u8j9t8qdcHx-9peLEZjT9fGIiNQBLm8G14xJyaNVDbFhIfzLoQHjQGYy-eeJTBIGnwdv1KvhicmDb03GOoUoY4fo9SFFHv6DQ4-z5M5KEjZCpt9apwmFpk0oYdeYSeGUIp-3lEGW6Lcjr6vVykkL6124tWEseDgaWDCN6QNpxrsOkMRmRixEJSSRx6syqwTFuB) a partir de [saap_sequence_diagram_uc02.puml](assets/saap_sequence_diagram_uc02.puml)
+
+### Exemplo: Caso de Uso "Confirmar Presença" (UC03)
+
+1. O Paciente confirma presença para um agendamento específico.
+2. A confirmação pode ocorrer por login opcional no sistema, por link de notificação (e-mail/WhatsApp) ou por contato com a recepção (WhatsApp/telefone).
+3. O sistema atualiza o status do agendamento para "Confirmado".
+4. Ao chegar na clínica, a recepção realiza o check-in presencial e o paciente entra na fila confirmada por ordem de chegada (FIFO).
+5. O sistema notifica o profissional sobre a confirmação/check-in e registra o evento no histórico.
+
+### Exemplo: Caso de Uso "Registrar Atendimento" (UC04)
+
+1. O Profissional visualiza a fila presencial confirmada na sua tela, ordenada por chegada.
+2. Ao clicar em **Chamar Paciente**, o sistema altera o status para **CALLING_PATIENT**.
+3. Quando o paciente entra no consultório, o profissional clica em **Iniciar Atendimento** e o status muda para **IN_PROGRESS**.
+4. O sistema libera a tela de prontuário para registro clínico.
+5. Ao finalizar e fechar o prontuário, o sistema marca o atendimento como **COMPLETED**.
+6. Após a finalização, a fila de pacientes pendentes volta a ser exibida para o próximo chamado.
+
+### Exemplo: Caso de Uso "Manter Cadastro" (UC01)
+
+1. O Administrador acessa o módulo de cadastros do sistema.
+2. O sistema exibe as opções de gerenciamento (Usuários, Pacientes, Profissionais, Serviços).
+3. O Administrador seleciona a entidade desejada e a operação (incluir, alterar, excluir ou consultar).
+4. O sistema valida os dados informados (unicidade de e-mail, campos obrigatórios, formato do registro profissional).
+5. O sistema persiste a operação e exibe a confirmação ao Administrador.
+
+### Exemplo: Caso de Uso "Gerenciar Fila de Espera" (UC05)
+
+1. A Recepcionista acessa a fila de espera para um determinado profissional e serviço.
+2. O sistema exibe os pacientes cadastrados na fila, ordenados por data de entrada.
+3. Quando ocorre uma desistência ou cancelamento, o sistema notifica automaticamente o primeiro paciente da fila.
+4. O paciente confirma interesse no horário liberado.
+5. O sistema cria o novo agendamento e remove o paciente da fila de espera.
+
+> Observação: esta fila de espera é diferente da fila presencial de chegada.  
+> Fila de espera = pré-agendamento por desistência; fila presencial = ordem de atendimento após check-in no local.
+
+### Exemplo: Caso de Uso "Cancelar/Remarcar" (UC06)
+
+1. O Paciente ou Recepcionista solicita o cancelamento ou remarcação de um agendamento existente.
+2. O sistema verifica o status atual do agendamento (somente Pendente ou Confirmado podem ser alterados).
+3. Em caso de cancelamento, o sistema atualiza o status para "Cancelado" e libera o horário na grade.
+4. Em caso de remarcação, o sistema exibe os horários disponíveis do profissional.
+5. O usuário seleciona o novo horário e o sistema cria um novo agendamento, cancelando o anterior.
+6. O sistema envia notificação ao paciente e ao profissional sobre a alteração.
+
+### Exemplo: Caso de Uso "Emitir Relatórios" (UC07)
+
+1. O Administrador acessa o módulo de relatórios.
+2. O sistema exibe os tipos disponíveis (faturamento por período, taxa de cancelamento, serviços mais procurados, produtividade por profissional).
+3. O Administrador seleciona o tipo de relatório e o período desejado.
+4. O sistema consulta os dados de agendamentos, atendimentos e faturamento.
+5. O sistema gera e exibe o relatório com gráficos e indicadores consolidados.
+
+### Exemplo: Caso de Uso "Preparar Atendimento" (UC08)
+
+1. O Assistente consulta a agenda do dia para o profissional ao qual está vinculado.
+2. O sistema exibe os atendimentos confirmados com detalhes do serviço e do paciente.
+3. O Assistente registra a preparação dos materiais e do ambiente necessários.
+4. O sistema atualiza o status da preparação, sinalizando ao profissional que o atendimento está pronto para iniciar.
+
+## Modelagem de Estados (Diagrama de Estados)
+
+Nesta etapa, o objetivo é descrever os diferentes estados que uma entidade central do domínio pode assumir ao longo de seu ciclo de vida, bem como as transições entre esses estados.
+
+### Exemplo: Entidade "Agendamento"
+
+- **Estados:**
+  - Pendente: O agendamento foi criado, mas ainda não foi confirmado.
+  - Confirmado: O paciente confirmou que comparecerá ao atendimento.
+  - Chamando Paciente: O profissional chamou o próximo paciente da fila presencial.
+  - Em Atendimento: O paciente entrou no consultório e o prontuário foi iniciado.
+  - Realizado: O atendimento foi concluído com sucesso.
+  - Cancelado: O agendamento foi cancelado pelo paciente ou pela recepção.
+  - No-show: O paciente não compareceu ao atendimento confirmado sem aviso prévio.
+
+- **Transições:**
+  - De Pendente para Confirmado: O paciente confirma a presença.
+  - De Confirmado para Chamando Paciente: O profissional clica em chamar paciente da fila.
+  - De Chamando Paciente para Em Atendimento: O paciente entra no consultório e o profissional inicia o atendimento.
+  - De Em Atendimento para Realizado: O profissional finaliza e fecha o prontuário.
+  - De Pendente para Cancelado: O paciente ou recepção cancela o agendamento.
+  - De Confirmado para Cancelado: O paciente ou recepção cancela o agendamento após confirmação.
+  - De Confirmado para No-show: O horário do atendimento passou e o paciente não compareceu nem cancelou.
+  - Remarcação: deve gerar um novo agendamento (com novo ID), mantendo o original no histórico.
+  - Estados finais de trilha operacional: Realizado, Cancelado e No-show não retornam para Pendente.
+
+## Requisitos Não Funcionais (RNF)
+
+- **LGPD e privacidade:** dados sensíveis com minimização de coleta, base legal definida, controle de acesso por perfil, registro de consentimento quando aplicável e trilha de auditoria de acesso/alteração.
+- **Segurança:** autenticação com hash de senha forte, proteção de sessão/token, autorização por papel (RBAC), validação de entrada e proteção contra abuso (rate limit) em endpoints críticos.
+- **Auditoria e rastreabilidade:** log de eventos de negócio (criação, confirmação, remarcação, cancelamento, no-show), com data/hora, ator/origem e correlação entre agendamento original e remarcado.
+- **Concorrência de agenda:** prevenção de double-booking por validação transacional e unicidade de slot por profissional/data-hora.
+- **Disponibilidade e backup:** rotina de backup periódico, política de retenção e procedimento de restauração testado.
+- **Observabilidade:** logs estruturados, métricas operacionais e monitoramento de falhas para notificação de incidentes.
+
+## Priorização do MVP (proposta)
+
+- **MVP obrigatório (primeira entrega funcional):**
+  - UC01 Manter Cadastro (Paciente, Profissional, Serviço)
+  - UC02 Agendar Atendimento (com validação de conflito de horário)
+  - UC03 Confirmar Presença (login opcional, link de notificação ou recepção)
+  - UC06 Cancelar/Remarcar (remarcação sempre como novo agendamento)
+  - Estados de Agendamento (Pendente, Confirmado, Realizado, Cancelado, No-show)
+  - Notificações básicas de confirmação/cancelamento
+  - Controle de acesso por papel (Administrador, Recepcionista, Profissional)
+
+- **Incremental (pós-MVP):**
+  - UC04 Registrar Atendimento + prontuário detalhado
+  - UC05 Fila de Espera Inteligente
+  - UC07 Relatórios analíticos avançados
+  - UC08 Preparar Atendimento
+  - Gestão de Convênios e regras de preço por serviço
+  - Observabilidade avançada e automações de lembrete
+
+## Diagrama de Classes Conceituais (Domínio)
+
+Diferente do diagrama de classes de projeto, o diagrama conceitual foca em representar as entidades do domínio e seus relacionamentos de forma abstrata, sem detalhes de implementação. Seguindo o padrão de projeto SOLID, as classes são organizadas para refletir a lógica de negócio e as regras do domínio, facilitando a evolução do sistema ao longo do desenvolvimento.
+
+Figura - Esquema de dados consolidado do domínio:
+
+![Schema final](assets/img/Diagrama_atual.png)
+
+> Diagrama criado com [Figma](https://www.figma.com/design/bNqm2RfZUY3HJP7DRy0BZZ/Untitled?node-id=7-2)
+
+### Estrutura das Entidades (Domain Layer)
+
+Abaixo, represento como essas classes seriam estruturadas logicamente:
+
+```prisma
+// schema.prisma
+
+datasource db {
+  provider = "postgresql" // Ou o banco de sua preferência (mysql, sqlserver)
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String   // Hash da senha (BCrypt)
+  isActive      Boolean  @default(true)
+  
+  // Relacionamento OBRIGATÓRIO com Professional (1:1)
+  // Todo usuário do sistema é um profissional (Admin, Recepcionista, Médico, etc.)
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String       @unique
+
+  // Relacionamento opcional com o perfil de paciente
+  // Permite que um profissional também seja paciente na mesma clínica
+  // NOTA: Pacientes podem operar sem login (padrão), com cadastro gerenciado
+  // pela recepção/administração. A confirmação de presença (UC03) pode ocorrer
+  // por login opcional, por links em notificações (e-mail/WhatsApp) ou por
+  // contato com a recepção (WhatsApp/telefone), contemplando cenários em que
+  // o paciente é menor de idade, idoso ou dependente de responsável.
+  patient        Patient?      @relation(fields: [patientId], references: [id])
+  patientId      String?       @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Patient {
+  id                    String               @id @default(uuid())
+  name                  String
+  email                 String?              // Para notificações por e-mail
+  phone                 String?              // Para notificações por WhatsApp/SMS
+  contact               String
+  notificationPreference NotificationChannel @default(EMAIL)
+  // Relação inversa opcional
+  user                  User?
+  appointments          Appointment[]        // 1:N Relationship
+  medicalRecord         MedicalRecord?       // 1:1 com Prontuário
+  notifications         Notification[]       // Histórico de notificações
+  waitlistEntries       WaitlistEntry[]      // Entradas na fila de espera
+  healthPlan            HealthPlan?          @relation(fields: [healthPlanId], references: [id])
+  healthPlanId          String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+}
+
+model Professional {
+  id             String            @id @default(uuid())
+  name           String
+  // Opcional para profissionais sem conselho de classe (ex: Assistentes)
+  licenseNumber  String?           @unique // Equivalent to "registroProfissional"
+  // Define o papel do profissional no sistema
+  role           ProfessionalRole  @default(PRACTITIONER)
+  specialty      String?
+  isActive       Boolean           @default(true) // Desativar sem excluir
+  
+  // Relação inversa obrigatória
+  user           User
+  services       Service[]         // Relationship N:N (Many professionals can do the same service)
+  appointments   Appointment[]
+  schedules      Schedule[]        // 1:N Grade de horários disponíveis
+  waitlistEntries WaitlistEntry[]  // Entradas na fila de espera
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model Service {
+  id               String              @id @default(uuid())
+  description      String              // Ex: "Consultation", "Exam" 
+  durationMinutes  Int
+  price            Decimal             @db.Decimal(10, 2)
+  isActive         Boolean             @default(true) // Desativar sem excluir
+  professionals    Professional[]      // M:N Relationship
+  appointments     Appointment[]
+  healthPlans      HealthPlan[]        // N:N com Convênios
+  pricingRules     HealthPlanPricing[] // Preços por convênio
+  waitlistEntries  WaitlistEntry[]     // Entradas na fila de espera
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+}
+
+model Appointment {
+  id             String            @id @default(uuid())
+  scheduledAt    DateTime          // Data/hora de referência do slot
+  periodLabel    String?           // Ex: "MANHA", "TARDE", "NOITE"
+  status         AppointmentStatus @default(PENDING)
+  checkedInAt    DateTime?         // Check-in presencial
+  arrivalOrder   Int?              // Ordem de chegada confirmada no período
+  calledAt       DateTime?         // Momento em que o paciente foi chamado
+  startedAt      DateTime?         // Início do atendimento no consultório
+  completedAt    DateTime?         // Término do atendimento
+  
+  // Relationships
+  patient        Patient           @relation(fields: [patientId], references: [id])
+  patientId      String
+  
+  professional   Professional      @relation(fields: [professionalId], references: [id])
+  professionalId String
+  
+  service        Service           @relation(fields: [serviceId], references: [id])
+  serviceId      String
+
+  // Forma de pagamento do atendimento
+  paymentMethod  PaymentMethod     @default(PRIVATE)
+  healthPlan     HealthPlan?       @relation(fields: [healthPlanId], references: [id])
+  healthPlanId   String?           // Null = particular
+
+  medicalRecordEntry MedicalRecordEntry? // Registro do prontuário vinculado
+  notifications      Notification[]      // Notificações enviadas sobre este agendamento
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CALLING_PATIENT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentMethod {
+  PRIVATE       // Atendimento particular
+  HEALTH_PLAN   // Cobertura por convênio
+}
+
+enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+enum ProfessionalRole {
+  PRACTITIONER    // Médico, Fisioterapeuta, etc.
+  NURSE           // Enfermeira
+  ASSISTANT       // Assistente de instrumentação
+  ADMINISTRATOR   // Administrador da clínica
+  RECEPTIONIST    // Recepcionista
+}
+
+// ──────────────────────────────────────────────
+// Agenda/Grade de Horários do Profissional
+// ──────────────────────────────────────────────
+
+model Schedule {
+  id             String       @id @default(uuid())
+  dayOfWeek      DayOfWeek    // Dia da semana
+  startTime      String       // Ex: "08:00"
+  endTime        String       // Ex: "17:00"
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// ──────────────────────────────────────────────
+// Prontuário Eletrônico / Histórico de Atendimento
+// ──────────────────────────────────────────────
+
+model MedicalRecord {
+  id        String               @id @default(uuid())
+  patient   Patient              @relation(fields: [patientId], references: [id])
+  patientId String               @unique // 1:1 com Paciente
+  entries   MedicalRecordEntry[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}
+
+model MedicalRecordEntry {
+  id              String        @id @default(uuid())
+  notes           String        // Observações clínicas
+  diagnosis       String?       // Diagnóstico (opcional)
+  prescription    String?       // Prescrição (opcional)
+  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id])
+  medicalRecordId String
+  appointment     Appointment   @relation(fields: [appointmentId], references: [id])
+  appointmentId   String        @unique // Cada entrada vinculada a um atendimento
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// ──────────────────────────────────────────────
+// Gestão de Convênios e Planos
+// ──────────────────────────────────────────────
+
+model HealthPlan {
+  id              String              @id @default(uuid())
+  name            String              // Ex: "Unimed", "SulAmérica"
+  coverageDetails String?             // Detalhes de cobertura
+  patients        Patient[]
+  services        Service[]           // Serviços cobertos pelo convênio
+  pricingRules    HealthPlanPricing[] // Tabela de preços por serviço
+  appointments    Appointment[]       // Atendimentos cobertos
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+// Tabela de preços diferenciados por convênio e serviço
+model HealthPlanPricing {
+  id           String     @id @default(uuid())
+  healthPlan   HealthPlan @relation(fields: [healthPlanId], references: [id])
+  healthPlanId String
+  service      Service    @relation(fields: [serviceId], references: [id])
+  serviceId    String
+  price        Decimal    @db.Decimal(10, 2) // Preço cobrado pelo convênio (pode diferir do particular)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([healthPlanId, serviceId]) // Um preço por combinação convênio+serviço
+}
+
+// ──────────────────────────────────────────────
+// Fila de Espera Inteligente
+// ──────────────────────────────────────────────
+
+model WaitlistEntry {
+  id             String       @id @default(uuid())
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  patientId      String
+  service        Service      @relation(fields: [serviceId], references: [id])
+  serviceId      String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now()) // Usado para ordenação FIFO
+  updatedAt      DateTime     @updatedAt
+}
+
+// ──────────────────────────────────────────────
+// Notificações e Lembretes Automáticos
+// ──────────────────────────────────────────────
+
+model Notification {
+  id            String             @id @default(uuid())
+  type          NotificationType   // Tipo da notificação
+  channel       NotificationChannel // Canal utilizado (e-mail, WhatsApp, SMS)
+  status        NotificationStatus @default(PENDING)
+  scheduledFor  DateTime?          // Para lembretes agendados (ex: 24h antes)
+  sentAt        DateTime?          // Quando foi efetivamente enviada
+  readAt        DateTime?          // Quando foi lida (se aplicável)
+  content       String             // Corpo da mensagem
+
+  // Relacionamentos
+  patient       Patient            @relation(fields: [patientId], references: [id])
+  patientId     String
+  appointment   Appointment?       @relation(fields: [appointmentId], references: [id])
+  appointmentId String?            // Null para notificações não vinculadas a agendamento
+
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+enum NotificationType {
+  APPOINTMENT_CONFIRMATION  // Confirmação de agendamento criado
+  APPOINTMENT_REMINDER      // Lembrete antes do atendimento
+  CANCELLATION_NOTICE       // Aviso de cancelamento
+  RESCHEDULE_NOTICE         // Aviso de remarcação
+  PRESENCE_REQUEST          // Solicitação de confirmação de presença
+  WAITLIST_AVAILABLE        // Horário disponível na fila de espera
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  SMS
+}
+
+enum NotificationStatus {
+  PENDING    // Agendada, aguardando envio
+  SENT       // Enviada com sucesso
+  DELIVERED  // Entregue ao destinatário
+  READ       // Lida pelo destinatário
+  FAILED     // Falha no envio
+}
+```
