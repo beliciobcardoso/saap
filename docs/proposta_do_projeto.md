@@ -35,6 +35,7 @@ O escopo inicial contempla o cadastro de entidades principais, o agendamento e o
 - Cancelamento e remarcação
 - Controle de horários disponíveis
 - Check-in presencial e ordenação de atendimento por chegada no período
+- **Confirmação de agendamento com follow-up automático:** envio de mensagem de lembrete/confirmação quando o agendamento estiver dentro da janela configurável (ex: 48h antes), com solicitação de confirmação (sim/não). Caso não confirmado até 24h antes, alerta à recepção para contato e decisão (cancelar + reocupar vaga da lista de espera).
 
 ## Visão do Projeto
 
@@ -49,13 +50,13 @@ O escopo inicial contempla o cadastro de entidades principais, o agendamento e o
 ## Dinâmica
 
 - **8 funcionalidades adicionais (proposta inicial):**
-  - Notificações e Lembretes Automáticos: Envio de confirmações via E-mail ou WhatsApp para reduzir faltas.
-  - Prontuário Eletrônico / Histórico de Atendimento: Registro das notas e observações feitas pelo profissional durante cada sessão.
-  - Gestão de Convênios e Planos: Configuração de diferentes formas de pagamento e cobertura para os atendimentos.
-  - Confirmação de presença pelo paciente: Reduz drasticamente o no-show (faltas) e otimiza o tempo do profissional.
-  - Lista de Espera Inteligente: Sistema que notifica pacientes interessados quando surge uma desistência em um horário concorrido.
-  - Histórico de atendimentos por paciente: Fundamental para a continuidade do cuidado e organização clínica.
-  - Relatórios de Desempenho: Visão analítica para o administrador (ex: taxa de cancelamento, faturamento por período e serviços mais procurados).
+   - Notificações e Lembretes Automáticos: Envio de confirmações via E-mail ou WhatsApp para reduzir faltas.
+   - **Confirmação de agendamento com follow-up proativo:** Envio de mensagem de confirmação (sim/não) quando o agendamento estiver dentro da janela configurável pelo administrador (ex: 48h antes). Se não confirmado até 24h antes, alerta à recepção para contato e decisão (cancelar + reocupar vaga da lista de espera). Responsabilidade: manter agenda cheia.
+   - Prontuário Eletrônico / Histórico de Atendimento: Registro das notas e observações feitas pelo profissional durante cada sessão.
+   - Gestão de Convênios e Planos: Configuração de diferentes formas de pagamento e cobertura para os atendimentos.
+   - Lista de Espera Inteligente: Sistema que notifica pacientes interessados quando surge uma desistência em um horário concorrido.
+   - Histórico de atendimentos por paciente: Fundamental para a continuidade do cuidado e organização clínica.
+   - Relatórios de Desempenho: Visão analítica para o administrador (ex: taxa de cancelamento, faturamento por período e serviços mais procurados).
   - **Atendimento Prioritário (Lei Federal 10.048/2000):** Garantia de atendimento prioritário para grupos especiais definidos por lei (idosos 60+, gestantes, lactantes, pessoas com deficiência, TEA, mobilidade reduzida, obesos, doadores de sangue), com implementação de fila preferencial baseada em algoritmo de prioridade.
 - **2 ou mais atores do sistema (proposta inicial):**
   - **Paciente:** pessoa que solicita atendimentos, acompanha seus agendamentos e confirma presença quando necessário.
@@ -278,6 +279,80 @@ Figura - Diagrama de Sequência (UC02 - Agendar Atendimento):
 5. Se a documentação for insuficiente ou a condição não for comprovada, a recepcionista **redefine a prioridade para NORMAL**, registrando a justificativa em `priorityNotes`.
 6. O sistema notifica o profissional sobre a prioridade validada (se aplicável) e registra o evento em log de auditoria.
 
+### Fluxo de Confirmação de Agendamento com Follow-up Proativo
+
+**Objetivo:** Reduzir taxas de no-show através de confirmação antecipada e follow-up administrativo quando o paciente não responde.
+
+#### Configuração (Administrador)
+
+O administrador define, nas configurações da clínica (`clinicSettings`):
+- `confirmationWindowHours`: número de horas antes do agendamento que a **solicitação de confirmação** é enviada (padrão: 48h, opções: 24, 48, 72).
+- `followUpDeadlineHours`: número de horas antes do agendamento que a **recepção deve ser notificada** se não houver confirmação (padrão: 24h).
+- `confirmationChannels`: canais de envio da solicitação (email, WhatsApp, SMS).
+- `autoCancelAfterNoResponse`: booleano — se `true`, cancelamento automático após `followUpDeadlineHours` sem resposta; se `false`, apenas alerta à recepção.
+- `waitlistAutoFill`: booleano — se `true`, libera automaticamente vaga para o primeiro da lista de espera após cancelamento.
+
+#### Fluxo Detalhado
+
+1. **Agendamento criado:** `Appointment(status: CONFIRMED, scheduledAt: X)` — dataX criado em Y.
+2. **Trigger de confirmação:** Quando `(scheduledAt - now()) ≤ confirmationWindowHours` **E** `confirmationStatus != CONFIRMED`, o sistema envia notificação de confirmação:
+   - Canal: conforme `confirmationChannels`.
+   - Conteúdo: "Confirme seu atendimento em [data/hora]. Responda **SIM** para confirmar ou **NÃO** para cancelar/remarcar."
+   - O sistema registra `confirmationRequestedAt = now()` e `confirmationStatus = PENDING_RESPONSE`.
+3. **Resposta do paciente:**
+   - Se **SIM** dentro do prazo: `confirmationStatus = CONFIRMED`, `confirmationMethod = channel_used`, `confirmationAt = now()`.
+   - Se **NÃO** dentro do prazo: `confirmationStatus = DECLINED`, sistema oferece opções de remarcação (fluxo UC06) ou cancelamento imediato.
+4. **Ausência de resposta:** Se `(scheduledAt - now()) ≤ followUpDeadlineHours` **E** `confirmationStatus = PENDING_RESPONSE`:
+   - Sistema envia **alerta à recepção** (dashboard, notificação interna).
+   - Se `autoCancelAfterNoResponse = true` → status muda para `CANCELLED` (com motivo "Sem confirmação dentro do prazo").
+   - Se `false` → a recepcionista assume responsabilidade de:
+     a. Entrar em contato com o paciente (telefone/WhatsApp).
+     b. Decidir: manter agendamento, remarcar ou cancelar.
+     c. Se cancelar e `waitlistAutoFill = true`, **aciona automaticamente UC05 (Fila de Espera)** — notifica o primeiro da fila.
+5. **Reocupação de vaga:** Quando o agendamento é cancelado por falta de confirmação:
+   - `Appointment` vai para `CANCELLED`.
+   - Se há fila de espera ativa para aquele `(professionalId, serviceId)`, o sistema notifica o paciente líder da fila (via notificação automática), oferecendo a vaga.
+   - O paciente da fila tem um tempo configurável para resposta (ex: 12h). Se aceitar, é criado novo agendamento com `scheduledAt` igual ao slot liberado.
+   - Se recusar ou não responder, segue para o próximo da fila.
+
+#### Campos no Modelo Appointment (Extensão)
+
+```prisma
+model Appointment {
+  // ...
+  confirmationStatus     ConfirmationStatus @default(NOT_REQUESTED)
+  confirmationRequestedAt DateTime?         // Quando a solicitação de confirmação foi enviada
+  confirmationDeadline    DateTime?         // Prazo limite para confirmação (gerado a partir de confirmationWindowHours)
+  confirmationAt         DateTime?         // Quando o paciente confirmou
+  confirmationMethod     ConfirmationMethod? // Email, WhatsApp, SMS
+  followUpRequired       Boolean           @default(false) // Requer intervenção da recepção
+  followUpNotifiedAt     DateTime?         // Quando a recepção foi alertada
+  // ...
+}
+
+enum ConfirmationStatus {
+  NOT_REQUESTED    // Confirmação ainda não solicitada (agendamento recente)
+  PENDING_RESPONSE // Solicitada, aguardando resposta do paciente
+  CONFIRMED        // Paciente confirmou presença
+  DECLINED         // Paciente declinou (cancelou/remarcará)
+  NO_RESPONSE      // Não respondeu até o followUpDeadline
+}
+```
+
+#### Integração com Outros Casos de Uso
+
+- **UC03 (Confirmar Presença):** A confirmação de agendamento (SMS/e-mail) é uma **pré-confirmação** remota; o `CHECKIN_IN` presencial é a confirmação física no local. Ambas são rastreadas separadamente.
+- **UC05 (Fila de Espera):** O cancelamento por falta de confirmação dispara automaticamente a Fila de Espera (se ativado).
+- **UC06 (Cancelar/Remarcar):** A resposta "NÃO" à confirmação oferece interface de remarcação; o cancelamento automático por no-show de resposta usa a mesma lógica de cancelamento.
+- **UC07 (Relatórios):** Deve incluir métricas de confirmação (taxa de resposta, taxa de no-show após follow-up, tempo médio de resposta).
+
+#### Vantagens do Follow-up Proativo
+
+- Redução de faltas por esquecimento.
+- Ocupação mais eficiente da agenda (vagas ociosas são realocadas).
+- Responsabilidade clara: recepcionista tem prazo definido para ação (`followUpRequired = true`).
+- Configurabilidade por clínica (diferentes janelas de tempo).
+
 ### Base Legal e Fundamentação (UC09)
 
 **Lei Federal 10.048/2000 (alterada pelas Leis 10.741/2003, 13.146/2015 e 14.626/2023):**
@@ -391,7 +466,7 @@ _Cada nó armazena: `(priorityLevel, timestampCheckIn)`. O heap garante que o n�
 ### Aplicação no SAAP — Fluxo de Atendimento
 
 1. **Check-in Presencial:**
-   - Paciente chega à clínica einforma condição de prioridade (se aplicável) — pode já ter declarado no agendamento online.
+   - Paciente chega à clínica e informa condição de prioridade (se aplicável) — pode já ter declarado no agendamento online.
    - **Recepcionista valida obrigatoriamente** a condição com documentação comprobatória (laudo, cartão, documento com idade, comprovante de doação, etc.).
    - Se válida: `priorityLevel` é mantido/definido, `priorityVerifiedBy` recebe o ID da recepcionista, `priorityNotes` registra tipo de documento.
    - Se inválida/não comprovada: `priorityLevel` é **redefinido para NORMAL**, com justificativa em `priorityNotes`.
@@ -477,6 +552,7 @@ model Appointment {
   - UC07 Relatórios analíticos avançados
   - UC08 Preparar Atendimento
   - UC09 Atendimento Prioritário (Lei 10.048/2000)
+  - **Confirmação de agendamento com follow-up proativo (extensão UC03/UC06)**
   - Gestão de Convênios e regras de preço por serviço
   - Observabilidade avançada e automações de lembrete
 
@@ -572,6 +648,37 @@ model Professional {
   updatedAt      DateTime          @updatedAt
 }
 
+// ──────────────────────────────────────────────
+// Cadastro da Clínica (Entity Master)
+// ──────────────────────────────────────────────
+
+model Clinic {
+  id                    String   @id @default(uuid())
+  name                  String   // Nome fantasia da clínica
+  legalName             String?  // Razão social (opcional)
+  cnpj                  String?  @unique // CNPJ (opcional para clínicas de pessoa jurídica)
+  cpf                   String?  @unique // CPF (para clínicas de pessoa física)
+  phone                 String?  // Telefone principal
+  email                 String?  // E-mail oficial
+  // Endereço
+  street                String?
+  number                String?
+  complement            String?
+  neighborhood          String?
+  city                  String?
+  state                 String?
+  zipCode               String?
+  // Responsável legal / diretor clínico (opcional — pode ser um Professional cadastrado)
+  responsibleProfessional   Professional? @relation(fields: [responsibleProfessionalId], references: [id])
+  responsibleProfessionalId String?
+  // Configurações específicas da clínica (1:1)
+  settings              ClinicSettings? @relation(fields: [settingsId], references: [id])
+  settingsId            String?         @unique
+  // Meta
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+}
+
 model Service {
   id               String              @id @default(uuid())
   description      String              // Ex: "Consultation", "Exam"
@@ -598,14 +705,23 @@ model Appointment {
   startedAt      DateTime?         // Início do atendimento no consultório
   completedAt    DateTime?         // Término do atendimento
 
-  // Atendimento Prioritário (Lei Federal 10.048/2000)
-  priorityLevel        PriorityLevel @default(NORMAL)  // Nível de prioridade legal (sempre definido)
-  priorityScore        BigInt?                         // Score composto (priority × 10^12 + timestamp check-in)
-  priorityDeclaredAt   DateTime?                       // Quando a prioridade foi declarada/check-in
-  priorityVerifiedBy   String?                         // ID do usuário que verificou (recepcionista/admin)
-  priorityNotes        String?                         // Observações (laudo, comprovante, justificativa)
+   // Atendimento Prioritário (Lei Federal 10.048/2000)
+   priorityLevel        PriorityLevel @default(NORMAL)       // Nível de prioridade legal (sempre definido)
+   priorityScore        BigInt?                              // Score composto (priority × 10^12 + timestamp check-in)
+   priorityDeclaredAt   DateTime?                            // Quando a prioridade foi declarada/check-in
+   priorityVerifiedBy   String?                              // ID do usuário que verificou (recepcionista/admin)
+   priorityNotes        String?                              // Observações (laudo, comprovante, justificativa)
 
-  // Relationships
+   // Confirmação de agendamento com follow-up proativo
+   confirmationStatus     ConfirmationStatus @default(NOT_REQUESTED) // Status da solicitação de confirmação
+   confirmationRequestedAt DateTime?                                 // Quando a solicitação de confirmação foi enviada
+   confirmationDeadline    DateTime?                                 // Prazo limite para confirmação (gerado com base em confWindowHours)
+   confirmationAt         DateTime?                                 // Quando o paciente confirmou
+   confirmationMethod     ConfirmationMethod?                       // Email, WhatsApp, SMS
+   followUpRequired       Boolean           @default(false)        // Requer intervenção da recepção
+   followUpNotifiedAt     DateTime?                                 // Quando a recepção foi alertada
+
+   // Relationships
   patient        Patient           @relation(fields: [patientId], references: [id])
   patientId      String
 
@@ -671,6 +787,24 @@ enum PriorityLevel {
   MEDIUM      // P3 — Gestante, lactante, pessoa com criança de colo
   ELEVATED    // P4 — Pessoa com obesidade (IMC ≥ 40)
   NORMAL      // P5 — Sem prioridade legal (atendimento regular)
+}
+
+// Confirmação de agendamento com follow-up proativo
+// ─────────────────────────────────────────────────────────────────────────────
+enum ConfirmationStatus {
+  NOT_REQUESTED    // Confirmação ainda não solicitada (agendamento recente)
+  PENDING_RESPONSE // Solicitada, aguardando resposta do paciente
+  CONFIRMED        // Paciente confirmou presença (via link/e-mail/WhatsApp)
+  DECLINED         // Paciente declinou (solicitou cancelamento/remarcação)
+  NO_RESPONSE      // Não respondeu até o followUpDeadline (alerta recepção)
+}
+
+enum ConfirmationMethod {
+  EMAIL
+  WHATSAPP
+  SMS
+  PHONE_CALL      // Ligações da recepção (follow-up manual)
+  DASHBOARD       // Confirmação via painel do paciente/app
 }
 
 // ──────────────────────────────────────────────
@@ -806,5 +940,43 @@ enum NotificationStatus {
   DELIVERED  // Entregue ao destinatário
   READ       // Lida pelo destinatário
   FAILED     // Falha no envio
+}
+
+// Confirmação de agendamento com follow-up proativo
+// ─────────────────────────────────────────────────────────────────────────────
+enum ConfirmationStatus {
+  NOT_REQUESTED    // Confirmação ainda não solicitada (agendamento recente)
+  PENDING_RESPONSE // Solicitada, aguardando resposta do paciente
+  CONFIRMED        // Paciente confirmou presença (via link/e-mail/WhatsApp)
+  DECLINED         // Paciente declinou (solicitou cancelamento/remarcação)
+  NO_RESPONSE      // Não respondeu até o followUpDeadline (alerta recepção)
+}
+
+enum ConfirmationMethod {
+  EMAIL
+  WHATSAPP
+  SMS
+  PHONE_CALL      // Ligações da recepção (follow-up manual)
+  DASHBOARD       // Confirmação via painel do paciente/app
+}
+
+// Configurações da clínica (singleton — um registro por instância)
+// ─────────────────────────────────────────────────────────────────────────────
+model ClinicSettings {
+  id                        String   @id @default(uuid())
+  clinic                    Clinic   @relation(fields: [clinicId], references: [id])
+  clinicId                  String   @unique
+  confirmationWindowHours   Int      @default(48)  // Horas de antecedência para solicitar confirmação
+  followUpDeadlineHours     Int      @default(24)  // Horas de antecedência para alertar recepção
+  autoCancelAfterNoResponse Boolean @default(false)
+  waitlistAutoFill          Boolean  @default(true)
+  // --- Ciclo de reocupação da lista de espera ---
+  waitlistCycleTimeoutMinutes Int   @default(30)  // Tempo (min) para responder antes de passar para próximo
+  waitlistMaxCycles          Int   @default(3)   // Máximo de ciclos completos (0 = infinito)
+  // ----------------------------------------------
+  // Canais habilitados (lista CSV, ex: "EMAIL,WHATSAPP,SMS")
+  enabledChannels           String   @default("EMAIL,WHATSAPP,SMS")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 }
 ```
