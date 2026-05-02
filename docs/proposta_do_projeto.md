@@ -35,7 +35,7 @@ O escopo inicial contempla o cadastro de entidades principais, o agendamento e o
 - Cancelamento e remarcação
 - Controle de horários disponíveis
 - Check-in presencial e ordenação de atendimento por chegada no período
-- **Confirmação de agendamento com follow-up automático:** envio de mensagem de lembrete/confirmação quando o agendamento estiver dentro da janela configurável (ex: 48h antes), com solicitação de confirmação (sim/não). Caso não confirmado até 24h antes, alerta à recepção para contato e decisão (cancelar + reocupar vaga da lista de espera).
+- **Confirmação de agendamento com follow-up proativo:** envio de mensagem de lembrete/confirmação quando o agendamento estiver dentro da janela configurável (ex: 48h antes), com solicitação de confirmação (sim/não). Caso não confirmado até 24h antes, alerta à recepção para contato e decisão (cancelar + reocupar vaga da lista de espera).
 
 ## Visão do Projeto
 
@@ -77,13 +77,6 @@ O escopo inicial contempla o cadastro de entidades principais, o agendamento e o
 - Diagrama de estados de uma entidade central do domínio
 - Visão arquitetural do sistema com justificativas
 - Protótipo funcional cobrindo as funcionalidades iniciais
-
-## Próxima Aula
-
-- **Transformar nossas ideias em:**
-  - Casos de uso
-  - Classes conceituais
-  - Primeiros diagramas UML
 
 ## Modelagem Funcional (Casos de Uso)
 
@@ -558,6 +551,8 @@ model Appointment {
 
 ## Diagrama de Classes Conceituais (Domínio)
 
+> **Nota:** Esta seção aprofunda tecnicamente a Modelagem Estrutural apresentada anteriormente, detalhando o schema de dados completo com sintaxe Prisma. Está posicionada ao final do documento por ser um artefato técnico de referência, consultado após a compreensão do domínio e das regras de negócio.
+
 Diferente do diagrama de classes de projeto, o diagrama conceitual foca em representar as entidades do domínio e seus relacionamentos de forma abstrata, sem detalhes de implementação. Seguindo o padrão de projeto SOLID, as classes são organizadas para refletir a lógica de negócio e as regras do domínio, facilitando a evolução do sistema ao longo do desenvolvimento.
 
 Figura - Esquema de dados consolidado do domínio:
@@ -671,9 +666,8 @@ model Clinic {
   // Responsável legal / diretor clínico (opcional — pode ser um Professional cadastrado)
   responsibleProfessional   Professional? @relation(fields: [responsibleProfessionalId], references: [id])
   responsibleProfessionalId String?
-  // Configurações específicas da clínica (1:1)
-  settings              ClinicSettings? @relation(fields: [settingsId], references: [id])
-  settingsId            String?         @unique
+  // Configurações específicas da clínica (1:1) — FK mantida em ClinicSettings
+  settings              ClinicSettings?
   // Meta
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
@@ -940,24 +934,6 @@ enum NotificationStatus {
   DELIVERED  // Entregue ao destinatário
   READ       // Lida pelo destinatário
   FAILED     // Falha no envio
-}
-
-// Confirmação de agendamento com follow-up proativo
-// ─────────────────────────────────────────────────────────────────────────────
-enum ConfirmationStatus {
-  NOT_REQUESTED    // Confirmação ainda não solicitada (agendamento recente)
-  PENDING_RESPONSE // Solicitada, aguardando resposta do paciente
-  CONFIRMED        // Paciente confirmou presença (via link/e-mail/WhatsApp)
-  DECLINED         // Paciente declinou (solicitou cancelamento/remarcação)
-  NO_RESPONSE      // Não respondeu até o followUpDeadline (alerta recepção)
-}
-
-enum ConfirmationMethod {
-  EMAIL
-  WHATSAPP
-  SMS
-  PHONE_CALL      // Ligações da recepção (follow-up manual)
-  DASHBOARD       // Confirmação via painel do paciente/app
 }
 
 // Configurações da clínica (singleton — um registro por instância)
