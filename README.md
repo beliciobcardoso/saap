@@ -18,6 +18,7 @@ Estruturar um sistema rastreável de agendamentos, com regras claras de negócio
 - Estados principais do agendamento: `PENDENTE`, `CONFIRMADO`, `REALIZADO`, `CANCELADO`, `NO_SHOW`
 - Notificações básicas de confirmação/cancelamento
 - Controle de acesso por perfil (RBAC): administrador, recepcionista e profissional
+- Estratificação de perfis administrativos para acesso a dados sensíveis (LGPD), aplicando princípio do menor privilégio
 
 ## Regras de negócio centrais
 
@@ -25,6 +26,11 @@ Estruturar um sistema rastreável de agendamentos, com regras claras de negócio
 - O paciente confirmado entra no fluxo presencial após **check-in**.
 - A ordem efetiva de atendimento no período é por chegada (**FIFO**).
 - Agendamento confirmado sem check-in no período deve ir para **NO_SHOW**.
+
+## Segurança e LGPD
+
+- Dados sensíveis devem ter acesso restrito por nível administrativo (ex.: operacional, gestão, compliance).
+- Toda visualização/alteração de dado sensível deve ser auditável (quem acessou, quando e por qual motivo).
 
 ## Atores do sistema
 

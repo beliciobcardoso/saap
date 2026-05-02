@@ -48,7 +48,7 @@ O escopo inicial contempla o cadastro de entidades principais, o agendamento e o
 
 ## Dinâmica
 
-- **7 funcionalidades adicionais (proposta inicial):**
+- **8 funcionalidades adicionais (proposta inicial):**
   - Notificações e Lembretes Automáticos: Envio de confirmações via E-mail ou WhatsApp para reduzir faltas.
   - Prontuário Eletrônico / Histórico de Atendimento: Registro das notas e observações feitas pelo profissional durante cada sessão.
   - Gestão de Convênios e Planos: Configuração de diferentes formas de pagamento e cobertura para os atendimentos.
@@ -56,6 +56,7 @@ O escopo inicial contempla o cadastro de entidades principais, o agendamento e o
   - Lista de Espera Inteligente: Sistema que notifica pacientes interessados quando surge uma desistência em um horário concorrido.
   - Histórico de atendimentos por paciente: Fundamental para a continuidade do cuidado e organização clínica.
   - Relatórios de Desempenho: Visão analítica para o administrador (ex: taxa de cancelamento, faturamento por período e serviços mais procurados).
+  - **Atendimento Prioritário (Lei Federal 10.048/2000):** Garantia de atendimento prioritário para grupos especiais definidos por lei (idosos 60+, gestantes, lactantes, pessoas com deficiência, TEA, mobilidade reduzida, obesos, doadores de sangue), com implementação de fila preferencial baseada em algoritmo de prioridade.
 - **2 ou mais atores do sistema (proposta inicial):**
   - **Paciente:** pessoa que solicita atendimentos, acompanha seus agendamentos e confirma presença quando necessário.
   - **Profissional de Saúde:** ator responsável por executar os atendimentos e registrar as evoluções clínicas ou operacionais relacionadas ao serviço prestado.
@@ -89,23 +90,27 @@ Nesta etapa, o foco está em descrever o que o sistema faz do ponto de vista dos
 
 ### Identificação dos Casos de Uso
 
-| ID   | Caso de Uso                             | Ator Principal           | Descrição Resumida                                      |
-| ---- | --------------------------------------- | ------------------------ | ------------------------------------------------------- |
-| UC01 | Manter Cadastro (Usuário/Paciente/Profissional) | Administrador | Incluir, alterar, excluir e consultar dados cadastrais e de acesso. |
-| UC02 | Agendar Atendimento                     | Paciente / Recepcionista | Selecionar profissional, serviço e período/slot disponível. |
-| UC03 | Confirmar Presença                      | Paciente                 | Confirmar presença e realizar check-in presencial para entrada na fila de chegada. |
-| UC04 | Registrar Atendimento                   | Profissional             | Evolução do prontuário e histórico durante a consulta.  |
-| UC05 | Gerenciar Fila de Espera                | Recepcionista            | Alocar pacientes em desistências de horários.           |
-| UC06 | Cancelar/Remarcar                       | Paciente / Recepcionista | Alterar o status de um agendamento existente.           |
-| UC07 | Emitir Relatórios                       | Administrador            | Gerar dados de faturamento e produtividade.             |
-| UC08 | Preparar Atendimento                    | Assistente               | Organizar materiais e preparar o ambiente para o atendimento. |
+| ID   | Caso de Uso                                     | Ator Principal           | Descrição Resumida                                                                                                                                                                        |
+| ---- | ----------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UC01 | Manter Cadastro (Usuário/Paciente/Profissional) | Administrador            | Incluir, alterar, excluir e consultar dados cadastrais e de acesso.                                                                                                                       |
+| UC02 | Agendar Atendimento                             | Paciente / Recepcionista | Selecionar profissional, serviço e período/slot disponível.                                                                                                                               |
+| UC03 | Confirmar Presença                              | Paciente                 | Confirmar presença e realizar check-in presencial para entrada na fila de chegada.                                                                                                        |
+| UC04 | Registrar Atendimento                           | Profissional             | Evolução do prontuário e histórico durante a consulta.                                                                                                                                    |
+| UC05 | Gerenciar Fila de Espera                        | Recepcionista            | Alocar pacientes em desistências de horários.                                                                                                                                             |
+| UC06 | Cancelar/Remarcar                               | Paciente / Recepcionista | Alterar o status de um agendamento existente.                                                                                                                                             |
+| UC07 | Emitir Relatórios                               | Administrador            | Gerar dados de faturamento e produtividade.                                                                                                                                               |
+| UC08 | Preparar Atendimento                            | Assistente               | Organizar materiais e preparar o ambiente para o atendimento.                                                                                                                             |
+| UC09 | Atendimento Prioritário                         | Recepcionista / Paciente | Garantir prioridade de atendimento a grupos especiais (idosos 60+, gestantes, PcD, TEA, etc.) conforme Lei Federal 10.048/2000, utilizando fila preferencial com algoritmo de prioridade. |
 
 ### Regra Operacional de Atendimento por Período
 
 - O agendamento é utilizado para planejar capacidade por período (ex.: manhã 08:00-11:00, intervalo de 1 hora entre atendimentos, capacidade de 4 pacientes).
 - Mesmo com agendamento confirmado, o paciente deve realizar check-in presencial antes do último horário do período correspondente.
-- Após o check-in presencial, o paciente entra em uma fila confirmada de chegada (FIFO) para atendimento.
-- A ordem efetiva de atendimento no período é definida pela ordem de chegada confirmada no local.
+- Após o check-in presencial, o paciente entra em uma **fila de atendimento ordenada por prioridade legal + ordem de chegada**.
+  - Prioridade legal (Lei 10.048/2000) tem precedência sobre FIFO.
+  - Pacientes de mesma prioridade são atendidos por ordem de chegada (FIFO).
+  - A fila é implementada como uma **fila prioritária (priority queue)** com heap binário (min-heap) e score composto.
+- A ordem efetiva de atendimento no período é definida pela **ordem de prioridade (menor nível primeiro) + timestamp de check-in**.
 - Pacientes sem check-in dentro do período seguem regra de ausência/no-show conforme política da clínica.
 - Ao encerrar o período de atendimento, todo agendamento confirmado sem check-in presencial deve ser marcado automaticamente como NO_SHOW.
 
@@ -204,7 +209,7 @@ Figura - Diagrama de Sequência (UC02 - Agendar Atendimento):
 1. O Paciente confirma presença para um agendamento específico.
 2. A confirmação pode ocorrer por login opcional no sistema, por link de notificação (e-mail/WhatsApp) ou por contato com a recepção (WhatsApp/telefone).
 3. O sistema atualiza o status do agendamento para "Confirmado".
-4. Ao chegar na clínica, a recepção realiza o check-in presencial e o paciente entra na fila confirmada por ordem de chegada (FIFO).
+4. Ao chegar na clínica, a recepção realiza o check-in presencial e o paciente é posicionado na fila ordenada por prioridade legal (Lei 10.048/2000) + ordem de chegada (FIFO para mesma prioridade).
 5. O sistema notifica o profissional sobre a confirmação/check-in e registra o evento no histórico.
 
 ### Exemplo: Caso de Uso "Registrar Atendimento" (UC04)
@@ -259,31 +264,191 @@ Figura - Diagrama de Sequência (UC02 - Agendar Atendimento):
 3. O Assistente registra a preparação dos materiais e do ambiente necessários.
 4. O sistema atualiza o status da preparação, sinalizando ao profissional que o atendimento está pronto para iniciar.
 
+### Exemplo: Caso de Uso "Atendimento Prioritário" (UC09)
+
+1. O paciente pode **declarar** sua condição de prioridade já no momento do agendamento (online), mas essa declaração é **prévia e não definitiva**.
+2. No **check-in presencial**, a recepcionista **sempre deve validar** a veracidade da condição declarada, solicitando documentação comprobatória quando necessário:
+   - **Idoso (60+):** documento com foto que comprove idade.
+   - **Gestante/Lactante:** cartão de gestante, exame ou declaração médica.
+   - **Pessoa com deficiência/TEA/mobilidade reduzida:** laudo médico, CID, cartão de pessoa com deficiência (PcD) ou documento oficial.
+   - **Doador de sangue:** comprovante de doação com data de validade (120 dias).
+   - **Obesidade (IMC ≥ 40):** laudo médico com IMC calculado.
+3. A recepcionista registra no sistema: `priorityLevel`, `priorityVerifiedBy` (seu ID), `priorityNotes` (observações), e `priorityDeclaredAt`.
+4. O sistema calcula o `priorityScore` e insere o agendamento na **fila de atendimento prioritária**.
+5. Se a documentação for insuficiente ou a condição não for comprovada, a recepcionista **redefine a prioridade para NORMAL**, registrando a justificativa em `priorityNotes`.
+6. O sistema notifica o profissional sobre a prioridade validada (se aplicável) e registra o evento em log de auditoria.
+
+### Base Legal e Fundamentação (UC09)
+
+**Lei Federal 10.048/2000 (alterada pelas Leis 10.741/2003, 13.146/2015 e 14.626/2023):**
+
+- Art. 1º - Garante atendimento prioritário às pessoas com deficiência, pessoas com transtorno do espectro autista (TEA), idosos (60+), gestantes, lactantes, pessoas com criança de colo, obesos, pessoas com mobilidade reduzida e doadores de sangue (com comprovante válido de 120 dias).
+- Art. 2º - Exige que repartições públicas e empresas concessionárias de serviços públicos dispensem atendimento individualizado e imediato a essas pessoas.
+- **Âmbito de aplicação:** O SAAP, como sistema de saúde privado, está obrigado a cumprir o disposto no Art. 2º da Lei 10.048/2000, pois se enquadra como "empresa concessionária de serviços públicos" na área de saúde, além de submeter-se à legislação consumerista (CDC) e à Lei de Acessibilidade (Lei 13.146/2015 - Estatuto da Pessoa com Deficiência).
+
 ## Modelagem de Estados (Diagrama de Estados)
 
 Nesta etapa, o objetivo é descrever os diferentes estados que uma entidade central do domínio pode assumir ao longo de seu ciclo de vida, bem como as transições entre esses estados.
 
 ### Exemplo: Entidade "Agendamento"
 
-- **Estados:**
-  - Pendente: O agendamento foi criado, mas ainda não foi confirmado.
-  - Confirmado: O paciente confirmou que comparecerá ao atendimento.
-  - Chamando Paciente: O profissional chamou o próximo paciente da fila presencial.
-  - Em Atendimento: O paciente entrou no consultório e o prontuário foi iniciado.
-  - Realizado: O atendimento foi concluído com sucesso.
-  - Cancelado: O agendamento foi cancelado pelo paciente ou pela recepção.
-  - No-show: O paciente não compareceu ao atendimento confirmado sem aviso prévio.
+**Estados:**
+- Pendente: O agendamento foi criado, mas ainda não foi confirmado.
+- Confirmado: O paciente confirmou que comparecerá ao atendimento.
+- **Check-in Realizado:** O paciente chegou à clínica e realizou o check-in presencial. Neste momento, a recepcionista **valida obrigatoriamente** a condição de prioridade (se declarada) com documentação comprobatória. O `priorityLevel` é confirmado ou redefinido para `NORMAL` se a comprovação falhar. O agendamento é inserido na fila prioritária com `priorityScore` calculado e o evento é registrado em log de auditoria.
+- Chamando Paciente: O profissional chamou o próximo paciente da fila presencial.
+- Em Atendimento: O paciente entrou no consultório e o prontuário foi iniciado.
+- Realizado: O atendimento foi concluído com sucesso.
+- Cancelado: O agendamento foi cancelado pelo paciente ou pela recepção.
+- No-show: O paciente não compareceu ao atendimento confirmado sem aviso prévio.
 
-- **Transições:**
-  - De Pendente para Confirmado: O paciente confirma a presença.
-  - De Confirmado para Chamando Paciente: O profissional clica em chamar paciente da fila.
-  - De Chamando Paciente para Em Atendimento: O paciente entra no consultório e o profissional inicia o atendimento.
-  - De Em Atendimento para Realizado: O profissional finaliza e fecha o prontuário.
-  - De Pendente para Cancelado: O paciente ou recepção cancela o agendamento.
-  - De Confirmado para Cancelado: O paciente ou recepção cancela o agendamento após confirmação.
-  - De Confirmado para No-show: O horário do atendimento passou e o paciente não compareceu nem cancelou.
-  - Remarcação: deve gerar um novo agendamento (com novo ID), mantendo o original no histórico.
-  - Estados finais de trilha operacional: Realizado, Cancelado e No-show não retornam para Pendente.
+**Transições:**
+- De Pendente para Confirmado: O paciente confirma a presença.
+- **De Confirmado para Check-in Realizado:** O paciente realiza check-in presencial na recepção. Nesta etapa, a recepcionista **valida a prioridade declarada** (se houver) com documentação, registra `priorityLevel` definitivo, `priorityVerifiedBy`, `priorityNotes` e `priorityDeclaredAt`. O sistema calcula o `priorityScore` e insere o agendamento na fila prioritária.
+- De Check-in Realizado para Chamando Paciente: O profissional clica em chamar paciente da fila (selecionado pela priority queue).
+- De Chamando Paciente para Em Atendimento: O paciente entra no consultório e o profissional inicia o atendimento.
+- De Em Atendimento para Realizado: O profissional finaliza e fecha o prontuário.
+- De Pendente para Cancelado: O paciente ou recepção cancela o agendamento.
+- De Confirmado para Cancelado: O paciente ou recepção cancela o agendamento após confirmação.
+- De Confirmado para No-show: O horário do atendimento passou e o paciente não compareceu nem cancelou.
+- De Check-in Realizado para Cancelado (caso especial): Paciente chega mas desiste antes de ser chamado (com justificativa).
+- Remarcação: deve gerar um novo agendamento (com novo ID), mantendo o original no histórico.
+- Estados finais de trilha operacional: Realizado, Cancelado e No-show não retornam para Pendente.
+
+**Nota sobre Check-in e Fila Prioritária (UC09):**
+O estado `Check-in Realizado` é crítico para o atendimento prioritário. Neste momento:
+1. A condição de prioridade (se aplicável) é verificada e registrada pela recepção.
+2. O `priorityScore` é calculado e o agendamento é inserido na **fila prioritária (priority queue)**.
+3. A ordem de chamada subsequente segue o algoritmo de heap: pacientes com prioridade menor (P1) são extraídos primeiro, seguidos por P2, P3, etc., mantendo FIFO dentro de cada nível.
+
+## Algoritmo de Fila Prioritária (UC09)
+
+### Conceito e Fundamentação Teórica
+
+**Algoritmo de Fila Prioritária (Priority Queue):**
+Uma fila prioritária é uma estrutura de dados onde cada elemento possui uma prioridade associada. Diferente da fila comum (FIFO — First In, First Out), a prioridade determina a ordem de atendimento, permitindo que elementos com maior prioridade sejam removidos primeiro. É uma fila ordenada, implementada frequentemente com **heaps binários (binary heaps)**, onde as operações de inserção (enqueue) e remoção (dequeue) são executadas em **O(log n)**.
+
+**Heap Binário (Binary Heap):**
+
+- É uma árvore binária completa que satisfaz a **propriedade de heap**: cada nó pai possui prioridade maior ou igual a seus filhos (max-heap) ou menor ou igual (min-heap).
+- Armazenado compactamente em um array, sem necessidade de ponteiros.
+- No SAAP, utilizaremos um **min-heap** onde a prioridade é representada por valor numérico (quanto menor o valor, maior a prioridade — ex.: 1 = Emergencial, 5 = Normal).
+
+**Operações Fundamentais:**
+
+- `insert(element, priority)`: O(log n) — insere e reorganiza o heap (bubble-up/sift-up).
+- `extract_min()` ou `extract_max()`: O(log n) — remove o elemento prioritário e reorganiza (bubble-down/sift-down).
+- `peek()`: O(1) — retorna o elemento prioritário sem removê-lo.
+- `change_priority(element, new_priority)`: O(log n) — altera prioridade e reordena.
+
+### Níveis de Prioridade (Base Legal Lei 10.048/2000)
+
+O SAAP implementa a seguinte hierarquia de prioridades para atendimento:
+
+| Nível  | Valor | Descrição                                               | Base Legal / Critério                                                  |
+| ------ | ----- | ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **P1** | 1     | Pessoa com deficiência física, intelectual ou sensorial | Lei 10.048/2000 + Lei 13.146/2015 (Estatuto da Pessoa com Deficiência) |
+| **P1** | 1     | Pessoa com Transtorno do Espectro Autista (TEA)         | Lei 10.048/2000 (alterada pela Lei 14.626/2023)                        |
+| **P1** | 1     | Pessoa com mobilidade reduzida                          | Lei 14.626/2023                                                        |
+| **P2** | 2     | Idoso (60 anos ou mais)                                 | Lei 10.048/2000 (Estatuto do Idoso - Lei 10.741/2003)                  |
+| **P2** | 2     | Doador de sangue (com comprovante válido de 120 dias)   | Lei 10.048/2000 (Lei 14.626/2023)                                      |
+| **P3** | 3     | Gestante                                                | Lei 10.048/2000                                                        |
+| **P3** | 3     | Lactante                                                | Lei 10.048/2000                                                        |
+| **P3** | 3     | Pessoa com criança de colo                              | Lei 10.048/2000                                                        |
+| **P4** | 4     | Pessoa com obesidade (IMC ≥ 40)                         | Lei 13.146/2015                                                        |
+| **P5** | 5     | Paciente sem prioridade legal (atendimento regular)     | —                                                                      |
+
+**Regras de Desempate (same priority):** FIFO (ordem de chegada/check-in). Para assegurar isso, utiliza-se um **timestamp de check-in** como critério secundário na ordenação do heap.
+
+### Complexidade Algorítmica
+
+| Operação                      | Estrutura Heap | Estrutura Array (ordenado)              |
+| ----------------------------- | -------------- | --------------------------------------- |
+| Inserção (enqueue)            | O(log n)       | O(n) — precisa reorganizar todo o array |
+| Remoção prioritária (dequeue) | O(log n)       | O(1) — sempre o primeiro elemento       |
+| Consulta ao topo (peek)       | O(1)           | O(1)                                    |
+| Busca por elemento            | O(n)           | O(log n) com busca binária              |
+| Alteração de prioridade       | O(log n)       | O(n) — precisa reordenar                |
+
+**Conclusão:** O **heap binário** é a implementação mais eficiente para a fila prioritária do SAAP, pois temos:
+
+- Inserções frequentes (check-in de pacientes)
+- Remoções frequentes (chamada para atendimento)
+- Necessidade de manter ordem por prioridade + FIFO tie-breaker
+
+**Figura - Heap Binário (Min-Heap) representando a Fila Prioritária:**
+
+```
+        (P1, 08:30) score: 1.083001e15  ← root (topo da fila)
+           /          \
+(P1, 08:35) score:1.083005e15   (P2, 08:20) score:2.083020e15
+      /        \                  /          \
+(P2, 08:25)  (P3, 08:40)      (P3, 08:45)  (P5, 08:50)
+```
+
+_Cada nó armazena: `(priorityLevel, timestampCheckIn)`. O heap garante que o nó raiz sempre tenha o menor score (maior prioridade). Inserções e remoções reordenam a árvore em O(log n)._
+
+### Aplicação no SAAP — Fluxo de Atendimento
+
+1. **Check-in Presencial:**
+   - Paciente chega à clínica einforma condição de prioridade (se aplicável) — pode já ter declarado no agendamento online.
+   - **Recepcionista valida obrigatoriamente** a condição com documentação comprobatória (laudo, cartão, documento com idade, comprovante de doação, etc.).
+   - Se válida: `priorityLevel` é mantido/definido, `priorityVerifiedBy` recebe o ID da recepcionista, `priorityNotes` registra tipo de documento.
+   - Se inválida/não comprovada: `priorityLevel` é **redefinido para NORMAL**, com justificativa em `priorityNotes`.
+   - Sistema registra `checkedInAt` e `priorityDeclaredAt`, calcula `priorityScore` e insere o agendamento na **fila de atendimento prioritária (Priority Queue)** com score composto:
+     ```
+     score = (priorityLevel × 10^12) + (timestampCheckInEmMilissegundos)
+     ```
+   - Esse score garante que: (a) prioridade menor (P1) vem primeiro; (b) mesma prioridade → ordem de chegada (FIFO).
+
+2. **Ordenação da Fila Presencial:**
+   - A fila é **mantida** como um **min-heap** ordenado por `score`.
+   - Quando o profissional clica **"Chamar próximo paciente"**, o sistema faz `extract_min()` da priority queue.
+   - O paciente com menor score (P1 mais antigo, ou P2 mais antigo, etc.) é selecionado.
+   - O agendamento tem status alterado para `CALLING_PATIENT`, depois `IN_PROGRESS` quando iniciado.
+
+3. **Atendimento Não-Prioritário:**
+   - Quando não há pacientes prioritários, a fila normal (FIFO) é usada.
+   - A priority queue comporta todos os pacientes, permitindo mistura de níveis.
+
+4. **Update Dinâmico de Prioridade:**
+   - Se um paciente com prioridade P5 (normal) declarar condição de prioridade no check-in (ex.: idoso), sua prioridade é **aumentada** (valor numérico diminui).
+   - O sistema recalcula seu `score` e chama `increase_priority()` (bubble-up no heap), reposicionando-o automaticamente.
+   - Isso evita que pacientes sem declaração prévia fiquem em desvantagem.
+
+### Modelagem de Dados — Prisma Schema (Extensão)
+
+```prisma
+enum PriorityLevel {
+  EMERGENCY    // P1 — deficiência, TEA, mobilidade reduzida (atendimento imediato)
+  HIGH         // P2 — idoso 60+, doador de sangue
+  MEDIUM       // P3 — gestante, lactante, criança de colo
+  ELEVATED     // P4 — obesidade
+  NORMAL       // P5 — sem prioridade legal
+}
+
+model Appointment {
+  // ... (campos existentes)
+  priorityLevel     PriorityLevel   @default(NORMAL)
+  priorityScore     BigInt?         // Score composto para ordenação (não indexado diretamente)
+  priorityDeclaredAt DateTime?      // Momento da declaração de prioridade
+  priorityVerifiedBy String?        // ID do usuário que verificou (recepcionista)
+  priorityNotes     String?         // Observações (ex.: laudo, comprovante)
+  // ...
+}
+```
+
+**Justificativa do `priorityScore`:** Armazenamos o score calculado (prioridade × 10^12 + timestamp) para permitir ordenação eficiente no banco via `ORDER BY priorityScore ASC`. Isso permite consultas SQL otimizadas sem carregar toda a heap na aplicação.
+
+### Considerações de Auditoria e Conformidade
+
+- **Log imutável:** Toda alteração de prioridade deve ser auditada (quem alterou, quando, com qual justificativa, e qual documento foi apresentado).
+- **Validação obrigatória no check-in:** A declaração de prioridade feita durante o agendamento (online) é **prévia e não vinculativa**. No check-in presencial, a recepcionista **deve** validar a condição com documentação comprobatória. Sem comprovação, a prioridade é definida como `NORMAL`.
+- **Comprovante de prioridade:** Para doadores de sangue, exigir upload do comprovante no sistema (validade 120 dias). Para outros grupos, documento físico pode ser verificável no ato.
+- **Tratamento de fraudes:** Recepcionista pode reverter prioridade se declarada indevidamente, com registro de motivo. Múltiplas reverteres podem acionar alerta dePossible abuso.
+- **Relatórios:** UC07 deve gerar estatísticas de atendimentos prioritários (% por tipo, tempo médio de espera por prioridade, taxa de comprovação documental).
+- **Retroatividade:** Se um paciente for chamado da fila (`CALLING_PATIENT`) e não tiver comprovado a prioridade, a prioridade é redefinida para `NORMAL` e o tempo de espera é recalculado (sem efeito retroativo na ordem já chamada).
+- **Acompanhantes:** Leitores do Art. 1º, §1º da Lei 10.048/2000 — acompanhantes de pessoas com prioridade são atendidos **juntamente e acessoriamente** (mesmo nível de prioridade do titular).
 
 ## Requisitos Não Funcionais (RNF)
 
@@ -291,6 +456,7 @@ Nesta etapa, o objetivo é descrever os diferentes estados que uma entidade cent
 - **Segurança:** autenticação com hash de senha forte, proteção de sessão/token, autorização por papel (RBAC), validação de entrada e proteção contra abuso (rate limit) em endpoints críticos.
 - **Auditoria e rastreabilidade:** log de eventos de negócio (criação, confirmação, remarcação, cancelamento, no-show), com data/hora, ator/origem e correlação entre agendamento original e remarcado.
 - **Concorrência de agenda:** prevenção de double-booking por validação transacional e unicidade de slot por profissional/data-hora.
+- **Conformidade com Lei 10.048/2000:** implementação de fila prioritária com algoritmo de prioridade, registro auditável de cada atendimento prioritário (nível, comprovante, usuário que verificou) e garantia de atendimento imediato após o serviço em andamento, conforme Art. 2º da lei.
 - **Disponibilidade e backup:** rotina de backup periódico, política de retenção e procedimento de restauração testado.
 - **Observabilidade:** logs estruturados, métricas operacionais e monitoramento de falhas para notificação de incidentes.
 
@@ -310,6 +476,7 @@ Nesta etapa, o objetivo é descrever os diferentes estados que uma entidade cent
   - UC05 Fila de Espera Inteligente
   - UC07 Relatórios analíticos avançados
   - UC08 Preparar Atendimento
+  - UC09 Atendimento Prioritário (Lei 10.048/2000)
   - Gestão de Convênios e regras de preço por serviço
   - Observabilidade avançada e automações de lembrete
 
@@ -344,7 +511,7 @@ model User {
   email         String   @unique
   passwordHash  String   // Hash da senha (BCrypt)
   isActive      Boolean  @default(true)
-  
+
   // Relacionamento OBRIGATÓRIO com Professional (1:1)
   // Todo usuário do sistema é um profissional (Admin, Recepcionista, Médico, etc.)
   professional   Professional @relation(fields: [professionalId], references: [id])
@@ -370,7 +537,9 @@ model Patient {
   email                 String?              // Para notificações por e-mail
   phone                 String?              // Para notificações por WhatsApp/SMS
   contact               String
+  dateOfBirth           DateTime?            // Para cálculo automático de prioridade por idade (60+)
   notificationPreference NotificationChannel @default(EMAIL)
+  // Dados sensíveis (deficiência, TEA, mobilidade) são declarados por atendimento, não no cadastro, conforme LGPD
   // Relação inversa opcional
   user                  User?
   appointments          Appointment[]        // 1:N Relationship
@@ -392,7 +561,7 @@ model Professional {
   role           ProfessionalRole  @default(PRACTITIONER)
   specialty      String?
   isActive       Boolean           @default(true) // Desativar sem excluir
-  
+
   // Relação inversa obrigatória
   user           User
   services       Service[]         // Relationship N:N (Many professionals can do the same service)
@@ -405,7 +574,7 @@ model Professional {
 
 model Service {
   id               String              @id @default(uuid())
-  description      String              // Ex: "Consultation", "Exam" 
+  description      String              // Ex: "Consultation", "Exam"
   durationMinutes  Int
   price            Decimal             @db.Decimal(10, 2)
   isActive         Boolean             @default(true) // Desativar sem excluir
@@ -428,14 +597,21 @@ model Appointment {
   calledAt       DateTime?         // Momento em que o paciente foi chamado
   startedAt      DateTime?         // Início do atendimento no consultório
   completedAt    DateTime?         // Término do atendimento
-  
+
+  // Atendimento Prioritário (Lei Federal 10.048/2000)
+  priorityLevel        PriorityLevel @default(NORMAL)  // Nível de prioridade legal (sempre definido)
+  priorityScore        BigInt?                         // Score composto (priority × 10^12 + timestamp check-in)
+  priorityDeclaredAt   DateTime?                       // Quando a prioridade foi declarada/check-in
+  priorityVerifiedBy   String?                         // ID do usuário que verificou (recepcionista/admin)
+  priorityNotes        String?                         // Observações (laudo, comprovante, justificativa)
+
   // Relationships
   patient        Patient           @relation(fields: [patientId], references: [id])
   patientId      String
-  
+
   professional   Professional      @relation(fields: [professionalId], references: [id])
   professionalId String
-  
+
   service        Service           @relation(fields: [serviceId], references: [id])
   serviceId      String
 
@@ -483,6 +659,18 @@ enum ProfessionalRole {
   ASSISTANT       // Assistente de instrumentação
   ADMINISTRATOR   // Administrador da clínica
   RECEPTIONIST    // Recepcionista
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Atendimento Prioritário — Lei Federal 10.048/2000 (alterada 2023)
+// Define os níveis de prioridade de atendimento baseados em grupos legais
+// ─────────────────────────────────────────────────────────────────────────────
+enum PriorityLevel {
+  EMERGENCY   // P1 — Pessoa com deficiência, TEA, mobilidade reduzida (atendimento imediato)
+  HIGH        // P2 — Idoso (60+), doador de sangue (comprovante 120 dias)
+  MEDIUM      // P3 — Gestante, lactante, pessoa com criança de colo
+  ELEVATED    // P4 — Pessoa com obesidade (IMC ≥ 40)
+  NORMAL      // P5 — Sem prioridade legal (atendimento regular)
 }
 
 // ──────────────────────────────────────────────
